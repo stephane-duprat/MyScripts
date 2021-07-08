@@ -1,0 +1,1117 @@
+SQL> r
+  1  SELECT output
+  2* FROM TABLE( DBMS_FEATURE_USAGE_REPORT.display_html)
+<html lang="en"><head><title>DB Feature Usage Report</title>                    
+<style type="text/css">                                                         
+body.awr {font:bold 10pt Arial,Helvetica,Geneva,sans-serif;color:black; backgrou
+nd:White;}                                                                      
+                                                                                
+pre.awr  {font:8pt Courier;color:black; background:White;}                      
+h1.awr   {font:bold 20pt Arial,Helvetica,Geneva,sans-serif;color:#336699;backgro
+und-color:White;border-bottom:1px solid #cccc99;margin-top:0pt; margin-bottom:0p
+t;padding:0px 0px 0px 0px;}                                                     
+                                                                                
+h2.awr   {font:bold 18pt Arial,Helvetica,Geneva,sans-serif;color:#336699;backgro
+und-color:White;margin-top:4pt; margin-bottom:0pt;}                             
+                                                                                
+h3.awr {font:bold 16pt Arial,Helvetica,Geneva,sans-serif;color:#336699;backgroun
+d-color:White;margin-top:4pt; margin-bottom:0pt;}                               
+                                                                                
+li.awr {font: 8pt Arial,Helvetica,Geneva,sans-serif; color:black; background:Whi
+te;}                                                                            
+                                                                                
+th.awrnobg {font:bold 8pt Arial,Helvetica,Geneva,sans-serif; color:black; backgr
+ound:White;padding-left:4px; padding-right:4px;padding-bottom:2px}              
+                                                                                
+th.awrbg {font:bold 8pt Arial,Helvetica,Geneva,sans-serif; color:White; backgrou
+nd:#0066CC;padding-left:4px; padding-right:4px;padding-bottom:2px}              
+                                                                                
+td.awrnc {font:8pt Arial,Helvetica,Geneva,sans-serif;color:black;background:Whit
+e;vertical-align:top;}                                                          
+                                                                                
+td.awrc    {font:8pt Arial,Helvetica,Geneva,sans-serif;color:black;background:#F
+FFFCC; vertical-align:top;}                                                     
+                                                                                
+td.awrnclb {font:8pt Arial,Helvetica,Geneva,sans-serif;color:black;background:Wh
+ite;vertical-align:top;border-left: thin solid black;}                          
+                                                                                
+td.awrncbb {font:8pt Arial,Helvetica,Geneva,sans-serif;color:black;background:Wh
+ite;vertical-align:top;border-left: thin solid black;border-right: thin solid bl
+ack;}                                                                           
+                                                                                
+td.awrncrb {font:8pt Arial,Helvetica,Geneva,sans-serif;color:black;background:Wh
+ite;vertical-align:top;border-right: thin solid black;}                         
+                                                                                
+td.awrcrb    {font:8pt Arial,Helvetica,Geneva,sans-serif;color:black;background:
+#FFFFCC; vertical-align:top;border-right: thin solid black;}                    
+                                                                                
+td.awrclb    {font:8pt Arial,Helvetica,Geneva,sans-serif;color:black;background:
+#FFFFCC; vertical-align:top;border-left: thin solid black;}                     
+                                                                                
+td.awrcbb    {font:8pt Arial,Helvetica,Geneva,sans-serif;color:black;background:
+#FFFFCC; vertical-align:top;border-left: thin solid black;border-right: thin sol
+id black;}                                                                      
+                                                                                
+a.awr {font:bold 8pt Arial,Helvetica,sans-serif;color:#663300; vertical-align:to
+p;margin-top:0pt; margin-bottom:0pt;}                                           
+                                                                                
+td.awrnct {font:8pt Arial,Helvetica,Geneva,sans-serif;border-top: thin solid bla
+ck;color:black;background:White;vertical-align:top;}                            
+                                                                                
+td.awrct   {font:8pt Arial,Helvetica,Geneva,sans-serif;border-top: thin solid bl
+ack;color:black;background:#FFFFCC; vertical-align:top;}                        
+                                                                                
+td.awrnclbt  {font:8pt Arial,Helvetica,Geneva,sans-serif;color:black;background:
+White;vertical-align:top;border-top: thin solid black;border-left: thin solid bl
+ack;}                                                                           
+                                                                                
+td.awrncbbt  {font:8pt Arial,Helvetica,Geneva,sans-serif;color:black;background:
+White;vertical-align:top;border-left: thin solid black;border-right: thin solid 
+black;border-top: thin solid black;}                                            
+                                                                                
+td.awrncrbt {font:8pt Arial,Helvetica,Geneva,sans-serif;color:black;background:W
+hite;vertical-align:top;border-top: thin solid black;border-right: thin solid bl
+ack;}                                                                           
+                                                                                
+td.awrcrbt     {font:8pt Arial,Helvetica,Geneva,sans-serif;color:black;backgroun
+d:#FFFFCC; vertical-align:top;border-top: thin solid black;border-right: thin so
+lid black;}                                                                     
+                                                                                
+td.awrclbt     {font:8pt Arial,Helvetica,Geneva,sans-serif;color:black;backgroun
+d:#FFFFCC; vertical-align:top;border-top: thin solid black;border-left: thin sol
+id black;}                                                                      
+                                                                                
+td.awrcbbt   {font:8pt Arial,Helvetica,Geneva,sans-serif;color:black;background:
+#FFFFCC; vertical-align:top;border-top: thin solid black;border-left: thin solid
+ black;border-right: thin solid black;}                                         
+                                                                                
+table.tdiff {  border_collapse: collapse; }                                     
+.hidden   {position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflo
+w:hidden;}                                                                      
+                                                                                
+.pad   {margin-left:17px;}                                                      
+.doublepad {margin-left:34px;}                                                  
+</style></head><body class="awr">                                               
+<h1 class="awr">                                                                
+DB FEATURE USAGE report for                                                     
+                                                                                
+</h1>                                                                           
+<p />                                                                           
+<table border="1" width="500">                                                  
+<tr><th class="awrbg" scope="col">DB Name</th><th class="awrbg" scope="col">DB I
+d</th><th class="awrbg" scope="col">Release</th><th class="awrbg" scope="col">To
+tal Samples</th><th class="awrbg" scope="col">Last Sample Time</th></tr>        
+                                                                                
+<tr><td class='awrnc'>REPAWR</td><td align="right" class='awrnc'>1844534870</td>
+<td class='awrnc'>11.2.0.3.0</td><td align="right" class='awrnc'>26</td><td clas
+s='awrnc'>13-Jan-15 13:49:48</td></tr>                                          
+                                                                                
+</table>                                                                        
+<p />                                                                           
+<hr />                                                                          
+<a class="awr" name="401"></a>                                                  
+<h2 class="awr">                                                                
+Database Usage Statistics                                                       
+</h2>                                                                           
+<ul>                                                                            
+<li class="awr"><a class="awr" href="#10702">DB Feature Usage Summary</a></li>  
+<li class="awr"><a class="awr" href="#10703">DB Feature Usage Details</a></li>  
+<li class="awr"><a class="awr" href="#10704">High Water Mark Statistics</a></li>
+<li class="awr"><a class="awr" href="#10705">CPU Usage Statistics</a></li>      
+</ul>                                                                           
+<a class="awr" href="#top">Back to Top</a><p />                                 
+<a class="awr" name="10702"></a>                                                
+<h3 class="awr">DB Feature Usage Summary</h3>                                   
+<ul>                                                                            
+<li class="awr"> This section displays the summary of Usage for Database Feature
+s. </li>                                                                        
+                                                                                
+<li class="awr"> The Currently Used column is TRUE if usage was detected for  </
+li>                                                                             
+                                                                                
+<li class="awr"> the feature at the last sample time.</li>                      
+</ul>                                                                           
+<table border="1" summary="DB Feature Usage Summary. . This section displays the
+ summary of Usage for Database Features.. The Currently Used column is TRUE if u
+sage was detected for . the feature at the last sample time."><tr><th class="awr
+bg" scope="col">Feature Name</th><th class="awrbg" scope="col">Curr- ently Used<
+/th><th class="awrbg" scope="col">Detected Usages</th><th class="awrbg" scope="c
+ol">Total Samples</th><th class="awrbg" scope="col">Last Usage    Time</th></tr>
+                                                                                
+<tr><td class='awrc'>AWR Report</td><td class='awrc'>TRUE</td><td align="right" 
+class='awrc'>12</td><td align="right" class='awrc'>26</td><td class='awrc'>01/13
+/15 13:49</td></tr>                                                             
+                                                                                
+<tr><td class='awrnc'>Audit Options</td><td class='awrnc'>TRUE</td><td align="ri
+ght" class='awrnc'>27</td><td align="right" class='awrnc'>26</td><td class='awrn
+c'>01/13/15 13:49</td></tr>                                                     
+                                                                                
+<tr><td class='awrc'>Automatic Maintenance - Optimizer Statistics Gathering</td>
+<td class='awrc'>TRUE</td><td align="right" class='awrc'>27</td><td align="right
+" class='awrc'>26</td><td class='awrc'>01/13/15 13:49</td></tr>                 
+                                                                                
+<tr><td class='awrnc'>Automatic Maintenance - SQL Tuning Advisor</td><td class='
+awrnc'>TRUE</td><td align="right" class='awrnc'>27</td><td align="right" class='
+awrnc'>26</td><td class='awrnc'>01/13/15 13:49</td></tr>                        
+                                                                                
+<tr><td class='awrc'>Automatic Maintenance - Space Advisor</td><td class='awrc'>
+TRUE</td><td align="right" class='awrc'>27</td><td align="right" class='awrc'>26
+</td><td class='awrc'>01/13/15 13:49</td></tr>                                  
+                                                                                
+<tr><td class='awrnc'>Automatic SGA Tuning</td><td class='awrnc'>TRUE</td><td al
+ign="right" class='awrnc'>20</td><td align="right" class='awrnc'>26</td><td clas
+s='awrnc'>01/13/15 13:49</td></tr>                                              
+                                                                                
+<tr><td class='awrc'>Automatic SQL Execution Memory</td><td class='awrc'>TRUE</t
+d><td align="right" class='awrc'>20</td><td align="right" class='awrc'>26</td><t
+d class='awrc'>01/13/15 13:49</td></tr>                                         
+                                                                                
+<tr><td class='awrnc'>Automatic Segment Space Management (system)</td><td class=
+'awrnc'>TRUE</td><td align="right" class='awrnc'>27</td><td align="right" class=
+'awrnc'>26</td><td class='awrnc'>01/13/15 13:49</td></tr>                       
+                                                                                
+<tr><td class='awrc'>Automatic Segment Space Management (user)</td><td class='aw
+rc'>TRUE</td><td align="right" class='awrc'>13</td><td align="right" class='awrc
+'>26</td><td class='awrc'>01/13/15 13:49</td></tr>                              
+                                                                                
+<tr><td class='awrnc'>Automatic Undo Management</td><td class='awrnc'>TRUE</td><
+td align="right" class='awrnc'>27</td><td align="right" class='awrnc'>26</td><td
+ class='awrnc'>01/13/15 13:49</td></tr>                                         
+                                                                                
+<tr><td class='awrc'>Automatic Workload Repository</td><td class='awrc'>TRUE</td
+><td align="right" class='awrc'>2</td><td align="right" class='awrc'>26</td><td 
+class='awrc'>01/13/15 13:49</td></tr>                                           
+                                                                                
+<tr><td class='awrnc'>Character Set</td><td class='awrnc'>TRUE</td><td align="ri
+ght" class='awrnc'>27</td><td align="right" class='awrnc'>26</td><td class='awrn
+c'>01/13/15 13:49</td></tr>                                                     
+                                                                                
+<tr><td class='awrc'>Deferred Segment Creation</td><td class='awrc'>TRUE</td><td
+ align="right" class='awrc'>27</td><td align="right" class='awrc'>26</td><td cla
+ss='awrc'>01/13/15 13:49</td></tr>                                              
+                                                                                
+<tr><td class='awrnc'>LOB</td><td class='awrnc'>TRUE</td><td align="right" class
+='awrnc'>12</td><td align="right" class='awrnc'>26</td><td class='awrnc'>01/13/1
+5 13:49</td></tr>                                                               
+                                                                                
+<tr><td class='awrc'>Locally Managed Tablespaces (system)</td><td class='awrc'>T
+RUE</td><td align="right" class='awrc'>27</td><td align="right" class='awrc'>26<
+/td><td class='awrc'>01/13/15 13:49</td></tr>                                   
+                                                                                
+<tr><td class='awrnc'>Locally Managed Tablespaces (user)</td><td class='awrnc'>T
+RUE</td><td align="right" class='awrnc'>27</td><td align="right" class='awrnc'>2
+6</td><td class='awrnc'>01/13/15 13:49</td></tr>                                
+                                                                                
+<tr><td class='awrc'>Logfile Multiplexing</td><td class='awrc'>TRUE</td><td alig
+n="right" class='awrc'>27</td><td align="right" class='awrc'>26</td><td class='a
+wrc'>01/13/15 13:49</td></tr>                                                   
+                                                                                
+<tr><td class='awrnc'>Oracle Java Virtual Machine (system)</td><td class='awrnc'
+>TRUE</td><td align="right" class='awrnc'>27</td><td align="right" class='awrnc'
+>26</td><td class='awrnc'>01/13/15 13:49</td></tr>                              
+                                                                                
+<tr><td class='awrc'>Oracle Managed Files</td><td class='awrc'>TRUE</td><td alig
+n="right" class='awrc'>27</td><td align="right" class='awrc'>26</td><td class='a
+wrc'>01/13/15 13:49</td></tr>                                                   
+                                                                                
+<tr><td class='awrnc'>Oracle Utility Datapump (Export)</td><td class='awrnc'>TRU
+E</td><td align="right" class='awrnc'>5</td><td align="right" class='awrnc'>26</
+td><td class='awrnc'>01/13/15 13:49</td></tr>                                   
+                                                                                
+<tr><td class='awrc'>Oracle Utility Metadata API</td><td class='awrc'>TRUE</td><
+td align="right" class='awrc'>6</td><td align="right" class='awrc'>26</td><td cl
+ass='awrc'>01/13/15 13:49</td></tr>                                             
+                                                                                
+<tr><td class='awrnc'>Partitioning (system)</td><td class='awrnc'>TRUE</td><td a
+lign="right" class='awrnc'>27</td><td align="right" class='awrnc'>26</td><td cla
+ss='awrnc'>01/13/15 13:49</td></tr>                                             
+                                                                                
+<tr><td class='awrc'>Partitioning (user)</td><td class='awrc'>TRUE</td><td align
+="right" class='awrc'>26</td><td align="right" class='awrc'>26</td><td class='aw
+rc'>01/13/15 13:49</td></tr>                                                    
+                                                                                
+<tr><td class='awrnc'>Recovery Area</td><td class='awrnc'>TRUE</td><td align="ri
+ght" class='awrnc'>27</td><td align="right" class='awrnc'>26</td><td class='awrn
+c'>01/13/15 13:49</td></tr>                                                     
+                                                                                
+<tr><td class='awrc'>SecureFiles (system)</td><td class='awrc'>TRUE</td><td alig
+n="right" class='awrc'>27</td><td align="right" class='awrc'>26</td><td class='a
+wrc'>01/13/15 13:49</td></tr>                                                   
+                                                                                
+<tr><td class='awrnc'>SecureFiles (user)</td><td class='awrnc'>TRUE</td><td alig
+n="right" class='awrnc'>27</td><td align="right" class='awrnc'>26</td><td class=
+'awrnc'>01/13/15 13:49</td></tr>                                                
+                                                                                
+<tr><td class='awrc'>Segment Shrink</td><td class='awrc'>TRUE</td><td align="rig
+ht" class='awrc'>22</td><td align="right" class='awrc'>26</td><td class='awrc'>0
+1/13/15 13:49</td></tr>                                                         
+                                                                                
+<tr><td class='awrnc'>Server Parameter File</td><td class='awrnc'>TRUE</td><td a
+lign="right" class='awrnc'>27</td><td align="right" class='awrnc'>26</td><td cla
+ss='awrnc'>01/13/15 13:49</td></tr>                                             
+                                                                                
+<tr><td class='awrc'>Virtual Private Database (VPD)</td><td class='awrc'>TRUE</t
+d><td align="right" class='awrc'>27</td><td align="right" class='awrc'>26</td><t
+d class='awrc'>01/13/15 13:49</td></tr>                                         
+                                                                                
+<tr><td class='awrnc'>ADDM</td><td class='awrnc'>FALSE</td><td align="right" cla
+ss='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='awrnc'>&#160;
+</td></tr>                                                                      
+                                                                                
+<tr><td class='awrc'>ASO native encryption and checksumming</td><td class='awrc'
+>FALSE</td><td align="right" class='awrc'>0</td><td align="right" class='awrc'>2
+6</td><td class='awrc'>&#160;</td></tr>                                         
+                                                                                
+<tr><td class='awrnc'>AWR Baseline</td><td class='awrnc'>FALSE</td><td align="ri
+ght" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='awrnc
+'>&#160;</td></tr>                                                              
+                                                                                
+<tr><td class='awrc'>AWR Baseline Template</td><td class='awrc'>FALSE</td><td al
+ign="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='
+awrc'>&#160;</td></tr>                                                          
+                                                                                
+<tr><td class='awrnc'>Active Data Guard - Real-Time Query on Physical Standby</t
+d><td class='awrnc'>FALSE</td><td align="right" class='awrnc'>0</td><td align="r
+ight" class='awrnc'>26</td><td class='awrnc'>&#160;</td></tr>                   
+                                                                                
+<tr><td class='awrc'>Advanced Replication</td><td class='awrc'>FALSE</td><td ali
+gn="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='a
+wrc'>&#160;</td></tr>                                                           
+                                                                                
+<tr><td class='awrnc'>Application Express</td><td class='awrnc'>FALSE</td><td al
+ign="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class
+='awrnc'>&#160;</td></tr>                                                       
+                                                                                
+<tr><td class='awrc'>Automatic Memory Tuning</td><td class='awrc'>FALSE</td><td 
+align="right" class='awrc'>7</td><td align="right" class='awrc'>26</td><td class
+='awrc'>06/10/13 10:54</td></tr>                                                
+                                                                                
+<tr><td class='awrnc'>Automatic SQL Tuning Advisor</td><td class='awrnc'>FALSE</
+td><td align="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td>
+<td class='awrnc'>&#160;</td></tr>                                              
+                                                                                
+<tr><td class='awrc'>Automatic Storage Management</td><td class='awrc'>FALSE</td
+><td align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td 
+class='awrc'>&#160;</td></tr>                                                   
+                                                                                
+<tr><td class='awrnc'>Backup BASIC Compression</td><td class='awrnc'>FALSE</td><
+td align="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td 
+class='awrnc'>&#160;</td></tr>                                                  
+                                                                                
+<tr><td class='awrc'>Backup BZIP2 Compression</td><td class='awrc'>FALSE</td><td
+ align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td clas
+s='awrc'>&#160;</td></tr>                                                       
+                                                                                
+<tr><td class='awrnc'>Backup Encryption</td><td class='awrnc'>FALSE</td><td alig
+n="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='
+awrnc'>&#160;</td></tr>                                                         
+                                                                                
+<tr><td class='awrc'>Backup HIGH Compression</td><td class='awrc'>FALSE</td><td 
+align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class
+='awrc'>&#160;</td></tr>                                                        
+                                                                                
+<tr><td class='awrnc'>Backup LOW Compression</td><td class='awrnc'>FALSE</td><td
+ align="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td cl
+ass='awrnc'>&#160;</td></tr>                                                    
+                                                                                
+<tr><td class='awrc'>Backup MEDIUM Compression</td><td class='awrc'>FALSE</td><t
+d align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td cla
+ss='awrc'>&#160;</td></tr>                                                      
+                                                                                
+<tr><td class='awrnc'>Backup Rollforward</td><td class='awrnc'>FALSE</td><td ali
+gn="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class=
+'awrnc'>&#160;</td></tr>                                                        
+                                                                                
+<tr><td class='awrc'>Backup ZLIB Compression</td><td class='awrc'>FALSE</td><td 
+align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class
+='awrc'>&#160;</td></tr>                                                        
+                                                                                
+<tr><td class='awrnc'>Baseline Adaptive Thresholds</td><td class='awrnc'>FALSE</
+td><td align="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td>
+<td class='awrnc'>&#160;</td></tr>                                              
+                                                                                
+<tr><td class='awrc'>Baseline Static Computations</td><td class='awrc'>FALSE</td
+><td align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td 
+class='awrc'>&#160;</td></tr>                                                   
+                                                                                
+<tr><td class='awrnc'>Bigfile Tablespace</td><td class='awrnc'>FALSE</td><td ali
+gn="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class=
+'awrnc'>&#160;</td></tr>                                                        
+                                                                                
+<tr><td class='awrc'>Block Media Recovery</td><td class='awrc'>FALSE</td><td ali
+gn="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='a
+wrc'>&#160;</td></tr>                                                           
+                                                                                
+<tr><td class='awrnc'>CSSCAN</td><td class='awrnc'>FALSE</td><td align="right" c
+lass='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='awrnc'>&#16
+0;</td></tr>                                                                    
+                                                                                
+<tr><td class='awrc'>Change Data Capture</td><td class='awrc'>FALSE</td><td alig
+n="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='aw
+rc'>&#160;</td></tr>                                                            
+                                                                                
+<tr><td class='awrnc'>Change-Aware Incremental Backup</td><td class='awrnc'>FALS
+E</td><td align="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</
+td><td class='awrnc'>&#160;</td></tr>                                           
+                                                                                
+<tr><td class='awrc'>Character Semantics</td><td class='awrc'>FALSE</td><td alig
+n="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='aw
+rc'>&#160;</td></tr>                                                            
+                                                                                
+<tr><td class='awrnc'>Client Identifier</td><td class='awrnc'>FALSE</td><td alig
+n="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='
+awrnc'>&#160;</td></tr>                                                         
+                                                                                
+<tr><td class='awrc'>Clusterwide Global Transactions</td><td class='awrc'>FALSE<
+/td><td align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><
+td class='awrc'>&#160;</td></tr>                                                
+                                                                                
+<tr><td class='awrnc'>Compression Advisor</td><td class='awrnc'>FALSE</td><td al
+ign="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class
+='awrnc'>&#160;</td></tr>                                                       
+                                                                                
+<tr><td class='awrc'>Crossedition Triggers</td><td class='awrc'>FALSE</td><td al
+ign="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='
+awrc'>&#160;</td></tr>                                                          
+                                                                                
+<tr><td class='awrnc'>DBMS_STATS Incremental Maintenance</td><td class='awrnc'>F
+ALSE</td><td align="right" class='awrnc'>0</td><td align="right" class='awrnc'>2
+6</td><td class='awrnc'>&#160;</td></tr>                                        
+                                                                                
+<tr><td class='awrc'>Data Guard</td><td class='awrc'>FALSE</td><td align="right"
+ class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='awrc'>&#160
+;</td></tr>                                                                     
+                                                                                
+<tr><td class='awrnc'>Data Mining</td><td class='awrnc'>FALSE</td><td align="rig
+ht" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='awrnc'
+>&#160;</td></tr>                                                               
+                                                                                
+<tr><td class='awrc'>Data Recovery Advisor</td><td class='awrc'>FALSE</td><td al
+ign="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='
+awrc'>&#160;</td></tr>                                                          
+                                                                                
+<tr><td class='awrnc'>Database Migration Assistant for Unicode</td><td class='aw
+rnc'>FALSE</td><td align="right" class='awrnc'>0</td><td align="right" class='aw
+rnc'>26</td><td class='awrnc'>&#160;</td></tr>                                  
+                                                                                
+<tr><td class='awrc'>Database Replay: Workload Capture</td><td class='awrc'>FALS
+E</td><td align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td
+><td class='awrc'>&#160;</td></tr>                                              
+                                                                                
+<tr><td class='awrnc'>Database Replay: Workload Replay</td><td class='awrnc'>FAL
+SE</td><td align="right" class='awrnc'>0</td><td align="right" class='awrnc'>26<
+/td><td class='awrnc'>&#160;</td></tr>                                          
+                                                                                
+<tr><td class='awrc'>Deferred Open Read Only</td><td class='awrc'>FALSE</td><td 
+align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class
+='awrc'>&#160;</td></tr>                                                        
+                                                                                
+<tr><td class='awrnc'>Direct NFS</td><td class='awrnc'>FALSE</td><td align="righ
+t" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='awrnc'>
+&#160;</td></tr>                                                                
+                                                                                
+<tr><td class='awrc'>Dynamic SGA</td><td class='awrc'>FALSE</td><td align="right
+" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='awrc'>&#16
+0;</td></tr>                                                                    
+                                                                                
+<tr><td class='awrnc'>EM Database Control</td><td class='awrnc'>FALSE</td><td al
+ign="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class
+='awrnc'>&#160;</td></tr>                                                       
+                                                                                
+<tr><td class='awrc'>EM Grid Control</td><td class='awrc'>FALSE</td><td align="r
+ight" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='awrc'>
+&#160;</td></tr>                                                                
+                                                                                
+<tr><td class='awrnc'>EM Performance Page</td><td class='awrnc'>FALSE</td><td al
+ign="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class
+='awrnc'>&#160;</td></tr>                                                       
+                                                                                
+<tr><td class='awrc'>Editioning Views</td><td class='awrc'>FALSE</td><td align="
+right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='awrc'
+>&#160;</td></tr>                                                               
+                                                                                
+<tr><td class='awrnc'>Editions</td><td class='awrnc'>FALSE</td><td align="right"
+ class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='awrnc'>&#
+160;</td></tr>                                                                  
+                                                                                
+<tr><td class='awrc'>Encrypted Tablespaces</td><td class='awrc'>FALSE</td><td al
+ign="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='
+awrc'>&#160;</td></tr>                                                          
+                                                                                
+<tr><td class='awrnc'>Exadata</td><td class='awrnc'>FALSE</td><td align="right" 
+class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='awrnc'>&#1
+60;</td></tr>                                                                   
+                                                                                
+<tr><td class='awrc'>Extensibility</td><td class='awrc'>FALSE</td><td align="rig
+ht" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='awrc'>&#
+160;</td></tr>                                                                  
+                                                                                
+<tr><td class='awrnc'>File Mapping</td><td class='awrnc'>FALSE</td><td align="ri
+ght" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='awrnc
+'>&#160;</td></tr>                                                              
+                                                                                
+<tr><td class='awrc'>Flashback Data Archive</td><td class='awrc'>FALSE</td><td a
+lign="right" class='awrc'>6</td><td align="right" class='awrc'>26</td><td class=
+'awrc'>06/10/13 10:54</td></tr>                                                 
+                                                                                
+<tr><td class='awrnc'>Flashback Database</td><td class='awrnc'>FALSE</td><td ali
+gn="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class=
+'awrnc'>&#160;</td></tr>                                                        
+                                                                                
+<tr><td class='awrc'>GoldenGate</td><td class='awrc'>FALSE</td><td align="right"
+ class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='awrc'>&#160
+;</td></tr>                                                                     
+                                                                                
+<tr><td class='awrnc'>HeapCompression</td><td class='awrnc'>FALSE</td><td align=
+"right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='aw
+rnc'>&#160;</td></tr>                                                           
+                                                                                
+<tr><td class='awrc'>Hybrid Columnar Compression</td><td class='awrc'>FALSE</td>
+<td align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td c
+lass='awrc'>&#160;</td></tr>                                                    
+                                                                                
+<tr><td class='awrnc'>Instance Caging</td><td class='awrnc'>FALSE</td><td align=
+"right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='aw
+rnc'>&#160;</td></tr>                                                           
+                                                                                
+<tr><td class='awrc'>Internode Parallel Execution</td><td class='awrc'>FALSE</td
+><td align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td 
+class='awrc'>&#160;</td></tr>                                                   
+                                                                                
+<tr><td class='awrnc'>Job Scheduler</td><td class='awrnc'>FALSE</td><td align="r
+ight" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='awrn
+c'>&#160;</td></tr>                                                             
+                                                                                
+<tr><td class='awrc'>Label Security</td><td class='awrc'>FALSE</td><td align="ri
+ght" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='awrc'>&
+#160;</td></tr>                                                                 
+                                                                                
+<tr><td class='awrnc'>Locator</td><td class='awrnc'>FALSE</td><td align="right" 
+class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='awrnc'>&#1
+60;</td></tr>                                                                   
+                                                                                
+<tr><td class='awrc'>Long-term Archival Backup</td><td class='awrc'>FALSE</td><t
+d align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td cla
+ss='awrc'>&#160;</td></tr>                                                      
+                                                                                
+<tr><td class='awrnc'>MTTR Advisor</td><td class='awrnc'>FALSE</td><td align="ri
+ght" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='awrnc
+'>&#160;</td></tr>                                                              
+                                                                                
+<tr><td class='awrc'>Materialized Views (User)</td><td class='awrc'>FALSE</td><t
+d align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td cla
+ss='awrc'>&#160;</td></tr>                                                      
+                                                                                
+<tr><td class='awrnc'>Messaging Gateway</td><td class='awrnc'>FALSE</td><td alig
+n="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='
+awrnc'>&#160;</td></tr>                                                         
+                                                                                
+<tr><td class='awrc'>Multi Section Backup</td><td class='awrc'>FALSE</td><td ali
+gn="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='a
+wrc'>&#160;</td></tr>                                                           
+                                                                                
+<tr><td class='awrnc'>Multiple Block Sizes</td><td class='awrnc'>FALSE</td><td a
+lign="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td clas
+s='awrnc'>&#160;</td></tr>                                                      
+                                                                                
+<tr><td class='awrc'>OLAP - Analytic Workspaces</td><td class='awrc'>FALSE</td><
+td align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td cl
+ass='awrc'>&#160;</td></tr>                                                     
+                                                                                
+<tr><td class='awrnc'>OLAP - Cubes</td><td class='awrnc'>FALSE</td><td align="ri
+ght" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='awrnc
+'>&#160;</td></tr>                                                              
+                                                                                
+<tr><td class='awrc'>Object</td><td class='awrc'>FALSE</td><td align="right" cla
+ss='awrc'>0</td><td align="right" class='awrc'>26</td><td class='awrc'>&#160;</t
+d></tr>                                                                         
+                                                                                
+<tr><td class='awrnc'>Oracle Database Vault</td><td class='awrnc'>FALSE</td><td 
+align="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td cla
+ss='awrnc'>&#160;</td></tr>                                                     
+                                                                                
+<tr><td class='awrc'>Oracle Java Virtual Machine (user)</td><td class='awrc'>FAL
+SE</td><td align="right" class='awrc'>0</td><td align="right" class='awrc'>26</t
+d><td class='awrc'>&#160;</td></tr>                                             
+                                                                                
+<tr><td class='awrnc'>Oracle Multimedia</td><td class='awrnc'>FALSE</td><td alig
+n="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='
+awrnc'>&#160;</td></tr>                                                         
+                                                                                
+<tr><td class='awrc'>Oracle Multimedia DICOM</td><td class='awrc'>FALSE</td><td 
+align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class
+='awrc'>&#160;</td></tr>                                                        
+                                                                                
+<tr><td class='awrnc'>Oracle Secure Backup</td><td class='awrnc'>FALSE</td><td a
+lign="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td clas
+s='awrnc'>&#160;</td></tr>                                                      
+                                                                                
+<tr><td class='awrc'>Oracle Text</td><td class='awrc'>FALSE</td><td align="right
+" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='awrc'>&#16
+0;</td></tr>                                                                    
+                                                                                
+<tr><td class='awrnc'>Oracle Utility Datapump (Import)</td><td class='awrnc'>FAL
+SE</td><td align="right" class='awrnc'>12</td><td align="right" class='awrnc'>26
+</td><td class='awrnc'>06/30/14 11:00</td></tr>                                 
+                                                                                
+<tr><td class='awrc'>Oracle Utility External Table</td><td class='awrc'>FALSE</t
+d><td align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td
+ class='awrc'>&#160;</td></tr>                                                  
+                                                                                
+<tr><td class='awrnc'>Oracle Utility SQL Loader (Direct Path Load)</td><td class
+='awrnc'>FALSE</td><td align="right" class='awrnc'>0</td><td align="right" class
+='awrnc'>26</td><td class='awrnc'>&#160;</td></tr>                              
+                                                                                
+<tr><td class='awrc'>PL/SQL Native Compilation</td><td class='awrc'>FALSE</td><t
+d align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td cla
+ss='awrc'>&#160;</td></tr>                                                      
+                                                                                
+<tr><td class='awrnc'>Parallel SQL DDL Execution</td><td class='awrnc'>FALSE</td
+><td align="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><t
+d class='awrnc'>&#160;</td></tr>                                                
+                                                                                
+<tr><td class='awrc'>Parallel SQL DML Execution</td><td class='awrc'>FALSE</td><
+td align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td cl
+ass='awrc'>&#160;</td></tr>                                                     
+                                                                                
+<tr><td class='awrnc'>Parallel SQL Query Execution</td><td class='awrnc'>FALSE</
+td><td align="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td>
+<td class='awrnc'>&#160;</td></tr>                                              
+                                                                                
+<tr><td class='awrc'>Quality of Service Management</td><td class='awrc'>FALSE</t
+d><td align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td
+ class='awrc'>&#160;</td></tr>                                                  
+                                                                                
+<tr><td class='awrnc'>RMAN - Disk Backup</td><td class='awrnc'>FALSE</td><td ali
+gn="right" class='awrnc'>6</td><td align="right" class='awrnc'>26</td><td class=
+'awrnc'>11/11/14 10:24</td></tr>                                                
+                                                                                
+<tr><td class='awrc'>RMAN - Tape Backup</td><td class='awrc'>FALSE</td><td align
+="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='awr
+c'>&#160;</td></tr>                                                             
+                                                                                
+<tr><td class='awrnc'>Read Only Tablespace</td><td class='awrnc'>FALSE</td><td a
+lign="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td clas
+s='awrnc'>&#160;</td></tr>                                                      
+                                                                                
+<tr><td class='awrc'>Real Application Clusters (RAC)</td><td class='awrc'>FALSE<
+/td><td align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><
+td class='awrc'>&#160;</td></tr>                                                
+                                                                                
+<tr><td class='awrnc'>Real-Time SQL Monitoring</td><td class='awrnc'>FALSE</td><
+td align="right" class='awrnc'>2</td><td align="right" class='awrnc'>26</td><td 
+class='awrnc'>06/25/13 09:57</td></tr>                                          
+                                                                                
+<tr><td class='awrc'>Recovery Manager (RMAN)</td><td class='awrc'>FALSE</td><td 
+align="right" class='awrc'>6</td><td align="right" class='awrc'>26</td><td class
+='awrc'>11/11/14 10:24</td></tr>                                                
+                                                                                
+<tr><td class='awrnc'>Resource Manager</td><td class='awrnc'>FALSE</td><td align
+="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='a
+wrnc'>&#160;</td></tr>                                                          
+                                                                                
+<tr><td class='awrc'>Restore Point</td><td class='awrc'>FALSE</td><td align="rig
+ht" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='awrc'>&#
+160;</td></tr>                                                                  
+                                                                                
+<tr><td class='awrnc'>Result Cache</td><td class='awrnc'>FALSE</td><td align="ri
+ght" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='awrnc
+'>&#160;</td></tr>                                                              
+                                                                                
+<tr><td class='awrc'>Rules Manager</td><td class='awrc'>FALSE</td><td align="rig
+ht" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='awrc'>&#
+160;</td></tr>                                                                  
+                                                                                
+<tr><td class='awrnc'>SQL Access Advisor</td><td class='awrnc'>FALSE</td><td ali
+gn="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class=
+'awrnc'>&#160;</td></tr>                                                        
+                                                                                
+<tr><td class='awrc'>SQL Monitoring and Tuning pages</td><td class='awrc'>FALSE<
+/td><td align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><
+td class='awrc'>&#160;</td></tr>                                                
+                                                                                
+<tr><td class='awrnc'>SQL Performance Analyzer</td><td class='awrnc'>FALSE</td><
+td align="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td 
+class='awrnc'>&#160;</td></tr>                                                  
+                                                                                
+<tr><td class='awrc'>SQL Plan Management</td><td class='awrc'>FALSE</td><td alig
+n="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='aw
+rc'>&#160;</td></tr>                                                            
+                                                                                
+<tr><td class='awrnc'>SQL Profile</td><td class='awrnc'>FALSE</td><td align="rig
+ht" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='awrnc'
+>&#160;</td></tr>                                                               
+                                                                                
+<tr><td class='awrc'>SQL Repair Advisor</td><td class='awrc'>FALSE</td><td align
+="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='awr
+c'>&#160;</td></tr>                                                             
+                                                                                
+<tr><td class='awrnc'>SQL Tuning Advisor</td><td class='awrnc'>FALSE</td><td ali
+gn="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class=
+'awrnc'>&#160;</td></tr>                                                        
+                                                                                
+<tr><td class='awrc'>SQL Tuning Set (system)</td><td class='awrc'>FALSE</td><td 
+align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class
+='awrc'>&#160;</td></tr>                                                        
+                                                                                
+<tr><td class='awrnc'>SQL Tuning Set (user)</td><td class='awrnc'>FALSE</td><td 
+align="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td cla
+ss='awrnc'>&#160;</td></tr>                                                     
+                                                                                
+<tr><td class='awrc'>SQL Workload Manager</td><td class='awrc'>FALSE</td><td ali
+gn="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='a
+wrc'>&#160;</td></tr>                                                           
+                                                                                
+<tr><td class='awrnc'>SecureFile Compression (system)</td><td class='awrnc'>FALS
+E</td><td align="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</
+td><td class='awrnc'>&#160;</td></tr>                                           
+                                                                                
+<tr><td class='awrc'>SecureFile Compression (user)</td><td class='awrc'>FALSE</t
+d><td align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td
+ class='awrc'>&#160;</td></tr>                                                  
+                                                                                
+<tr><td class='awrnc'>SecureFile Deduplication (system)</td><td class='awrnc'>FA
+LSE</td><td align="right" class='awrnc'>0</td><td align="right" class='awrnc'>26
+</td><td class='awrnc'>&#160;</td></tr>                                         
+                                                                                
+<tr><td class='awrc'>SecureFile Deduplication (user)</td><td class='awrc'>FALSE<
+/td><td align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><
+td class='awrc'>&#160;</td></tr>                                                
+                                                                                
+<tr><td class='awrnc'>SecureFile Encryption (system)</td><td class='awrnc'>FALSE
+</td><td align="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</t
+d><td class='awrnc'>&#160;</td></tr>                                            
+                                                                                
+<tr><td class='awrc'>SecureFile Encryption (user)</td><td class='awrc'>FALSE</td
+><td align="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td 
+class='awrc'>&#160;</td></tr>                                                   
+                                                                                
+<tr><td class='awrnc'>Segment Advisor (user)</td><td class='awrnc'>FALSE</td><td
+ align="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td cl
+ass='awrnc'>&#160;</td></tr>                                                    
+                                                                                
+<tr><td class='awrc'>Semantics/RDF</td><td class='awrc'>FALSE</td><td align="rig
+ht" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='awrc'>&#
+160;</td></tr>                                                                  
+                                                                                
+<tr><td class='awrnc'>Server Flash Cache</td><td class='awrnc'>FALSE</td><td ali
+gn="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class=
+'awrnc'>&#160;</td></tr>                                                        
+                                                                                
+<tr><td class='awrc'>Services</td><td class='awrc'>FALSE</td><td align="right" c
+lass='awrc'>0</td><td align="right" class='awrc'>26</td><td class='awrc'>&#160;<
+/td></tr>                                                                       
+                                                                                
+<tr><td class='awrnc'>Shared Server</td><td class='awrnc'>FALSE</td><td align="r
+ight" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='awrn
+c'>&#160;</td></tr>                                                             
+                                                                                
+<tr><td class='awrc'>Spatial</td><td class='awrc'>FALSE</td><td align="right" cl
+ass='awrc'>0</td><td align="right" class='awrc'>26</td><td class='awrc'>&#160;</
+td></tr>                                                                        
+                                                                                
+<tr><td class='awrnc'>Streams (system)</td><td class='awrnc'>FALSE</td><td align
+="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='a
+wrnc'>&#160;</td></tr>                                                          
+                                                                                
+<tr><td class='awrc'>Streams (user)</td><td class='awrc'>FALSE</td><td align="ri
+ght" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='awrc'>&
+#160;</td></tr>                                                                 
+                                                                                
+<tr><td class='awrnc'>Transparent Data Encryption</td><td class='awrnc'>FALSE</t
+d><td align="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><
+td class='awrnc'>&#160;</td></tr>                                               
+                                                                                
+<tr><td class='awrc'>Transparent Gateway</td><td class='awrc'>FALSE</td><td alig
+n="right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='aw
+rc'>&#160;</td></tr>                                                            
+                                                                                
+<tr><td class='awrnc'>Transportable Tablespace</td><td class='awrnc'>FALSE</td><
+td align="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td 
+class='awrnc'>&#160;</td></tr>                                                  
+                                                                                
+<tr><td class='awrc'>Tune MView</td><td class='awrc'>FALSE</td><td align="right"
+ class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='awrc'>&#160
+;</td></tr>                                                                     
+                                                                                
+<tr><td class='awrnc'>Undo Advisor</td><td class='awrnc'>FALSE</td><td align="ri
+ght" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='awrnc
+'>&#160;</td></tr>                                                              
+                                                                                
+<tr><td class='awrc'>Very Large Memory</td><td class='awrc'>FALSE</td><td align=
+"right" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='awrc
+'>&#160;</td></tr>                                                              
+                                                                                
+<tr><td class='awrnc'>Workspace Manager</td><td class='awrnc'>FALSE</td><td alig
+n="right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='
+awrnc'>&#160;</td></tr>                                                         
+                                                                                
+<tr><td class='awrc'>XDB</td><td class='awrc'>FALSE</td><td align="right" class=
+'awrc'>0</td><td align="right" class='awrc'>26</td><td class='awrc'>&#160;</td><
+/tr>                                                                            
+                                                                                
+<tr><td class='awrnc'>XStream In</td><td class='awrnc'>FALSE</td><td align="righ
+t" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='awrnc'>
+&#160;</td></tr>                                                                
+                                                                                
+<tr><td class='awrc'>XStream Out</td><td class='awrc'>FALSE</td><td align="right
+" class='awrc'>0</td><td align="right" class='awrc'>26</td><td class='awrc'>&#16
+0;</td></tr>                                                                    
+                                                                                
+<tr><td class='awrnc'>XStream Streams</td><td class='awrnc'>FALSE</td><td align=
+"right" class='awrnc'>0</td><td align="right" class='awrnc'>26</td><td class='aw
+rnc'>&#160;</td></tr>                                                           
+                                                                                
+</table><p />                                                                   
+<a class="awr" href="#401">Back to Database Usage Statistics</a>                
+<br /><a class="awr" href="#top">Back to Top</a><p />                           
+<a class="awr" name="10703"></a>                                                
+<h3 class="awr">DB Feature Usage Details</h3>                                   
+<ul>                                                                            
+<li class="awr"> This section displays the detailed usage data for the features 
+</li>                                                                           
+                                                                                
+<li class="awr"> that have at least one detected usage</li>                     
+</ul>                                                                           
+<table border="1" summary="DB Feature Usage Details. . This section displays the
+ detailed usage data for the features. that have at least one detected usage"><t
+r><th class="awrbg" scope="col">Feature Name</th><th class="awrbg" scope="col">D
+etected Usages</th><th class="awrbg" scope="col">Total Samples</th><th class="aw
+rbg" scope="col">First Usage Date</th><th class="awrbg" scope="col">Last Usage D
+ate</th><th class="awrbg" scope="col">Aux Count</th><th class="awrbg" scope="col
+">Feature Info</th></tr>                                                        
+                                                                                
+<tr><td class='awrc'>AWR Report</td>                                            
+<td align="right" class='awrc'>12</td><td align="right" class='awrc'>26</td><td 
+align="right" class='awrc'>02/07/13 17:20</td><td align="right" class='awrc'>01/
+13/15 13:49</td><td align="right" class='awrc'>4</td>                           
+                                                                                
+<td class='awrc'>AWR Report:4</td></tr>                                         
+<tr><td class='awrnc'>Audit Options</td>                                        
+<td align="right" class='awrnc'>27</td><td align="right" class='awrnc'>26</td><t
+d align="right" class='awrnc'>02/07/13 17:20</td><td align="right" class='awrnc'
+>01/13/15 13:49</td><td align="right" class='awrnc'>&#160;</td>                 
+                                                                                
+<td class='awrnc'>&#160;&#160;</td></tr>                                        
+<tr><td class='awrc'>Automatic Maintenance - Optimizer Statistics Gathering</td>
+<td align="right" class='awrc'>27</td><td align="right" class='awrc'>26</td><td 
+align="right" class='awrc'>02/07/13 17:20</td><td align="right" class='awrc'>01/
+13/15 13:49</td><td align="right" class='awrc'>0</td>                           
+                                                                                
+<td class='awrc'>&#160;&#160;</td></tr>                                         
+<tr><td class='awrnc'>Automatic Maintenance - SQL Tuning Advisor</td>           
+<td align="right" class='awrnc'>27</td><td align="right" class='awrnc'>26</td><t
+d align="right" class='awrnc'>02/07/13 17:20</td><td align="right" class='awrnc'
+>01/13/15 13:49</td><td align="right" class='awrnc'>0</td>                      
+                                                                                
+<td class='awrnc'>&#160;&#160;</td></tr>                                        
+<tr><td class='awrc'>Automatic Maintenance - Space Advisor</td>                 
+<td align="right" class='awrc'>27</td><td align="right" class='awrc'>26</td><td 
+align="right" class='awrc'>02/07/13 17:20</td><td align="right" class='awrc'>01/
+13/15 13:49</td><td align="right" class='awrc'>0</td>                           
+                                                                                
+<td class='awrc'>&#160;&#160;</td></tr>                                         
+<tr><td class='awrnc'>Automatic Memory Tuning</td>                              
+<td align="right" class='awrnc'>7</td><td align="right" class='awrnc'>26</td><td
+ align="right" class='awrnc'>02/07/13 17:20</td><td align="right" class='awrnc'>
+06/10/13 10:54</td><td align="right" class='awrnc'>0</td>                       
+                                                                                
+<td class='awrnc'>:memory_target:838860800:sga_max_size:838860800:memory_max_tar
+get:838860800: ...</td></tr>                                                    
+                                                                                
+<tr><td class='awrc'>Automatic SGA Tuning</td>                                  
+<td align="right" class='awrc'>20</td><td align="right" class='awrc'>26</td><td 
+align="right" class='awrc'>06/25/13 09:57</td><td align="right" class='awrc'>01/
+13/15 13:49</td><td align="right" class='awrc'>0</td>                           
+                                                                                
+<td class='awrc'>:sga_target:1610612736:sga_max_size:1610612736:comp:shared pool
+:cur:40265318 ...</td></tr>                                                     
+                                                                                
+<tr><td class='awrnc'>Automatic SQL Execution Memory</td>                       
+<td align="right" class='awrnc'>20</td><td align="right" class='awrnc'>26</td><t
+d align="right" class='awrnc'>06/25/13 09:57</td><td align="right" class='awrnc'
+>01/13/15 13:49</td><td align="right" class='awrnc'>0</td>                      
+                                                                                
+<td class='awrnc'>&#160;&#160;</td></tr>                                        
+<tr><td class='awrc'>Automatic Segment Space Management (system)</td>           
+<td align="right" class='awrc'>27</td><td align="right" class='awrc'>26</td><td 
+align="right" class='awrc'>02/07/13 17:20</td><td align="right" class='awrc'>01/
+13/15 13:49</td><td align="right" class='awrc'>3</td>                           
+                                                                                
+<td class='awrc'>(Segment Space Management: AUTO,  TS Count: 3,  Size MB: 14428)
+ (Segment Space ...</td></tr>                                                   
+                                                                                
+<tr><td class='awrnc'>Automatic Segment Space Management (user)</td>            
+<td align="right" class='awrnc'>13</td><td align="right" class='awrnc'>26</td><t
+d align="right" class='awrnc'>03/04/13 10:31</td><td align="right" class='awrnc'
+>01/13/15 13:49</td><td align="right" class='awrnc'>&#160;</td>                 
+                                                                                
+<td class='awrnc'>&#160;&#160;</td></tr>                                        
+<tr><td class='awrc'>Automatic Undo Management</td>                             
+<td align="right" class='awrc'>27</td><td align="right" class='awrc'>26</td><td 
+align="right" class='awrc'>02/07/13 17:20</td><td align="right" class='awrc'>01/
+13/15 13:49</td><td align="right" class='awrc'>1</td>                           
+                                                                                
+<td class='awrc'>(Retention: NOGUARANTEE,  TS Count: 1,  Size MB: 2048) (Undo Bl
+ocks: 1581,  Max ...</td></tr>                                                  
+                                                                                
+<tr><td class='awrnc'>Automatic Workload Repository</td>                        
+<td align="right" class='awrnc'>2</td><td align="right" class='awrnc'>26</td><td
+ align="right" class='awrnc'>01/13/15 13:07</td><td align="right" class='awrnc'>
+01/13/15 13:49</td><td align="right" class='awrnc'>&#160;</td>                  
+                                                                                
+<td class='awrnc'>DBtime:, DBcpu:</td></tr>                                     
+<tr><td class='awrc'>Character Set</td>                                         
+<td align="right" class='awrc'>27</td><td align="right" class='awrc'>26</td><td 
+align="right" class='awrc'>02/07/13 17:20</td><td align="right" class='awrc'>01/
+13/15 13:49</td><td align="right" class='awrc'>&#160;</td>                      
+                                                                                
+<td class='awrc'>WE8MSWIN1252</td></tr>                                         
+<tr><td class='awrnc'>Deferred Segment Creation</td>                            
+<td align="right" class='awrnc'>27</td><td align="right" class='awrnc'>26</td><t
+d align="right" class='awrnc'>02/07/13 17:20</td><td align="right" class='awrnc'
+>01/13/15 13:49</td><td align="right" class='awrnc'>2,767</td>                  
+                                                                                
+<td class='awrnc'>Deferred Segment Creation  Parameter:1 Total Deferred Segments
+:2767 Total Cr ...</td></tr>                                                    
+                                                                                
+<tr><td class='awrc'>Flashback Data Archive</td>                                
+<td align="right" class='awrc'>6</td><td align="right" class='awrc'>26</td><td a
+lign="right" class='awrc'>03/04/13 10:31</td><td align="right" class='awrc'>06/1
+0/13 10:54</td><td align="right" class='awrc'>&#160;</td>                       
+                                                                                
+<td class='awrc'>&#160;&#160;</td></tr>                                         
+<tr><td class='awrnc'>LOB</td>                                                  
+<td align="right" class='awrnc'>12</td><td align="right" class='awrnc'>26</td><t
+d align="right" class='awrnc'>03/04/13 10:31</td><td align="right" class='awrnc'
+>01/13/15 13:49</td><td align="right" class='awrnc'>&#160;</td>                 
+                                                                                
+<td class='awrnc'>&#160;&#160;</td></tr>                                        
+<tr><td class='awrc'>Locally Managed Tablespaces (system)</td>                  
+<td align="right" class='awrc'>27</td><td align="right" class='awrc'>26</td><td 
+align="right" class='awrc'>02/07/13 17:20</td><td align="right" class='awrc'>01/
+13/15 13:49</td><td align="right" class='awrc'>5</td>                           
+                                                                                
+<td class='awrc'>(Extent Management: LOCAL,  TS Count: 5,  Size MB: 17246)</td><
+/tr>                                                                            
+                                                                                
+<tr><td class='awrnc'>Locally Managed Tablespaces (user)</td>                   
+<td align="right" class='awrnc'>27</td><td align="right" class='awrnc'>26</td><t
+d align="right" class='awrnc'>02/07/13 17:20</td><td align="right" class='awrnc'
+>01/13/15 13:49</td><td align="right" class='awrnc'>&#160;</td>                 
+                                                                                
+<td class='awrnc'>&#160;&#160;</td></tr>                                        
+<tr><td class='awrc'>Logfile Multiplexing</td>                                  
+<td align="right" class='awrc'>27</td><td align="right" class='awrc'>26</td><td 
+align="right" class='awrc'>02/07/13 17:20</td><td align="right" class='awrc'>01/
+13/15 13:49</td><td align="right" class='awrc'>&#160;</td>                      
+                                                                                
+<td class='awrc'>&#160;&#160;</td></tr>                                         
+<tr><td class='awrnc'>Oracle Java Virtual Machine (system)</td>                 
+<td align="right" class='awrnc'>27</td><td align="right" class='awrnc'>26</td><t
+d align="right" class='awrnc'>02/07/13 17:20</td><td align="right" class='awrnc'
+>01/13/15 13:49</td><td align="right" class='awrnc'>24,002</td>                 
+                                                                                
+<td class='awrnc'>System users: EXFSYS with 47 classes,  1 resources,  0 sources
+. MDSYS with 535 ...</td></tr>                                                  
+                                                                                
+<tr><td class='awrc'>Oracle Managed Files</td>                                  
+<td align="right" class='awrc'>27</td><td align="right" class='awrc'>26</td><td 
+align="right" class='awrc'>02/07/13 17:20</td><td align="right" class='awrc'>01/
+13/15 13:49</td><td align="right" class='awrc'>&#160;</td>                      
+                                                                                
+<td class='awrc'>&#160;&#160;</td></tr>                                         
+<tr><td class='awrnc'>Oracle Utility Datapump (Export)</td>                     
+<td align="right" class='awrnc'>5</td><td align="right" class='awrnc'>26</td><td
+ align="right" class='awrnc'>04/29/13 14:57</td><td align="right" class='awrnc'>
+01/13/15 13:49</td><td align="right" class='awrnc'>13</td>                      
+                                                                                
+<td class='awrnc'>Oracle Utility Datapump (Export) invoked: 13 times,  compressi
+on used: 10 tim ...</td></tr>                                                   
+                                                                                
+<tr><td class='awrc'>Oracle Utility Datapump (Import)</td>                      
+<td align="right" class='awrc'>12</td><td align="right" class='awrc'>26</td><td 
+align="right" class='awrc'>02/07/13 17:20</td><td align="right" class='awrc'>06/
+30/14 11:00</td><td align="right" class='awrc'>22</td>                          
+                                                                                
+<td class='awrc'>Oracle Utility Datapump (Import) invoked: 22 times,  compressio
+n used: 0 time ...</td></tr>                                                    
+                                                                                
+<tr><td class='awrnc'>Oracle Utility Metadata API</td>                          
+<td align="right" class='awrnc'>6</td><td align="right" class='awrnc'>26</td><td
+ align="right" class='awrnc'>04/29/13 14:57</td><td align="right" class='awrnc'>
+01/13/15 13:49</td><td align="right" class='awrnc'>1,646</td>                   
+                                                                                
+<td class='awrnc'>Oracle Utility Metadata API invoked: 1646 times,  compression 
+used: 0 times,   ...</td></tr>                                                  
+                                                                                
+<tr><td class='awrc'>Partitioning (system)</td>                                 
+<td align="right" class='awrc'>27</td><td align="right" class='awrc'>26</td><td 
+align="right" class='awrc'>02/07/13 17:20</td><td align="right" class='awrc'>01/
+13/15 13:49</td><td align="right" class='awrc'>3</td>                           
+                                                                                
+<td class='awrc'>1:T:RANGE::19::2::::|1:I:::::1::GNP:NORMAL:NU|1:I:RANGE::19::2:
+:LP:NORMAL:U| ...</td></tr>                                                     
+                                                                                
+<tr><td class='awrnc'>Partitioning (user)</td>                                  
+<td align="right" class='awrnc'>26</td><td align="right" class='awrnc'>26</td><t
+d align="right" class='awrnc'>03/04/13 10:31</td><td align="right" class='awrnc'
+>01/13/15 13:49</td><td align="right" class='awrnc'>3</td>                      
+                                                                                
+<td class='awrnc'>1:T:RANGE::1::1::::|1:I:::::1::GNP:NORMAL:NU|</td></tr>       
+<tr><td class='awrc'>RMAN - Disk Backup</td>                                    
+<td align="right" class='awrc'>6</td><td align="right" class='awrc'>26</td><td a
+lign="right" class='awrc'>05/27/13 12:14</td><td align="right" class='awrc'>11/1
+1/14 10:24</td><td align="right" class='awrc'>1</td>                            
+                                                                                
+<td class='awrc'>&#160;&#160;</td></tr>                                         
+<tr><td class='awrnc'>Real-Time SQL Monitoring</td>                             
+<td align="right" class='awrnc'>2</td><td align="right" class='awrnc'>26</td><td
+ align="right" class='awrnc'>05/27/13 12:14</td><td align="right" class='awrnc'>
+06/25/13 09:57</td><td align="right" class='awrnc'>4</td>                       
+                                                                                
+<td class='awrnc'>&lt;sqlmon_usage&gt;                                          
+  &lt;num_em_reports&gt;0&lt;/num_em_reports&gt;                                
+  &lt;first_db_report_time&gt; ...</td></tr>                                    
+                                                                                
+<tr><td class='awrc'>Recovery Area</td>                                         
+<td align="right" class='awrc'>27</td><td align="right" class='awrc'>26</td><td 
+align="right" class='awrc'>02/07/13 17:20</td><td align="right" class='awrc'>01/
+13/15 13:49</td><td align="right" class='awrc'>4,322,230,272</td>               
+                                                                                
+<td class='awrc'>&#160;&#160;</td></tr>                                         
+<tr><td class='awrnc'>Recovery Manager (RMAN)</td>                              
+<td align="right" class='awrnc'>6</td><td align="right" class='awrnc'>26</td><td
+ align="right" class='awrnc'>05/27/13 12:14</td><td align="right" class='awrnc'>
+11/11/14 10:24</td><td align="right" class='awrnc'>1</td>                       
+                                                                                
+<td class='awrnc'>&#160;&#160;</td></tr>                                        
+<tr><td class='awrc'>SecureFiles (system)</td>                                  
+<td align="right" class='awrc'>27</td><td align="right" class='awrc'>26</td><td 
+align="right" class='awrc'>02/07/13 17:20</td><td align="right" class='awrc'>01/
+13/15 13:49</td><td align="right" class='awrc'>25</td>                          
+                                                                                
+<td class='awrc'>&#160;&#160;</td></tr>                                         
+<tr><td class='awrnc'>SecureFiles (user)</td>                                   
+<td align="right" class='awrnc'>27</td><td align="right" class='awrnc'>26</td><t
+d align="right" class='awrnc'>02/07/13 17:20</td><td align="right" class='awrnc'
+>01/13/15 13:49</td><td align="right" class='awrnc'>34</td>                     
+                                                                                
+<td class='awrnc'>&#160;&#160;</td></tr>                                        
+<tr><td class='awrc'>Segment Shrink</td>                                        
+<td align="right" class='awrc'>22</td><td align="right" class='awrc'>26</td><td 
+align="right" class='awrc'>04/29/13 14:57</td><td align="right" class='awrc'>01/
+13/15 13:49</td><td align="right" class='awrc'>0</td>                           
+                                                                                
+<td class='awrc'>&#160;&#160;</td></tr>                                         
+<tr><td class='awrnc'>Server Parameter File</td>                                
+<td align="right" class='awrnc'>27</td><td align="right" class='awrnc'>26</td><t
+d align="right" class='awrnc'>02/07/13 17:20</td><td align="right" class='awrnc'
+>01/13/15 13:49</td><td align="right" class='awrnc'>&#160;</td>                 
+                                                                                
+<td class='awrnc'>&#160;&#160;</td></tr>                                        
+<tr><td class='awrc'>Virtual Private Database (VPD)</td>                        
+<td align="right" class='awrc'>27</td><td align="right" class='awrc'>26</td><td 
+align="right" class='awrc'>02/07/13 17:20</td><td align="right" class='awrc'>01/
+13/15 13:49</td><td align="right" class='awrc'>&#160;</td>                      
+                                                                                
+<td class='awrc'>&#160;&#160;</td></tr>                                         
+</table><p />                                                                   
+<a class="awr" href="#401">Back to Database Usage Statistics</a>                
+<br /><a class="awr" href="#top">Back to Top</a><p />                           
+<a class="awr" name="10704"></a>                                                
+<h3 class="awr">High Water Mark Statistics</h3>                                 
+<ul>                                                                            
+<li class="awr"> This section displays the Database High Water Mark Statistics</
+li>                                                                             
+                                                                                
+</ul>                                                                           
+<table border="1" summary="High Water Mark Statistics. . This section displays t
+he Database High Water Mark Statistics"><tr><th class="awrbg" scope="col">Name</
+th><th class="awrbg" scope="col">High Water Mark</th><th class="awrbg" scope="co
+l">Last Value</th></tr>                                                         
+                                                                                
+<tr><td class='awrc'>Maximum Number of Active Sessions seen in the system</td><t
+d align="right" class='awrc'>2</td><td align="right" class='awrc'>0</td></tr>   
+                                                                                
+<tr><td class='awrnc'>Maximum Number of CPUs</td><td align="right" class='awrnc'
+>2</td><td align="right" class='awrnc'>2</td></tr>                              
+                                                                                
+<tr><td class='awrc'>Maximum Number of Concurrent Sessions seen in the database<
+/td><td align="right" class='awrc'>12</td><td align="right" class='awrc'>4</td><
+/tr>                                                                            
+                                                                                
+<tr><td class='awrnc'>Maximum Number of Datafiles</td><td align="right" class='a
+wrnc'>7</td><td align="right" class='awrnc'>7</td></tr>                         
+                                                                                
+<tr><td class='awrc'>Maximum Number of Materialized Views (User)</td><td align="
+right" class='awrc'>1</td><td align="right" class='awrc'>1</td></tr>            
+                                                                                
+<tr><td class='awrnc'>Maximum Number of Partitions belonging to an User Index</t
+d><td align="right" class='awrnc'>0</td><td align="right" class='awrnc'>0</td></
+tr>                                                                             
+                                                                                
+<tr><td class='awrc'>Maximum Number of Partitions belonging to an User Table</td
+><td align="right" class='awrc'>1</td><td align="right" class='awrc'>1</td></tr>
+                                                                                
+<tr><td class='awrnc'>Maximum Number of SQL NCHAR Columns</td><td align="right" 
+class='awrnc'>31</td><td align="right" class='awrnc'>31</td></tr>               
+                                                                                
+<tr><td class='awrc'>Maximum Number of Tablespaces</td><td align="right" class='
+awrc'>6</td><td align="right" class='awrc'>6</td></tr>                          
+                                                                                
+<tr><td class='awrnc'>Maximum Query Length</td><td align="right" class='awrnc'>1
+,990</td><td align="right" class='awrnc'>949</td></tr>                          
+                                                                                
+<tr><td class='awrc'>Maximum Size of the Database (Bytes)</td><td align="right" 
+class='awrc'>18,083,741,696</td><td align="right" class='awrc'>18,083,741,696</t
+d></tr>                                                                         
+                                                                                
+<tr><td class='awrnc'>Number of User Indexes</td><td align="right" class='awrnc'
+>3,783</td><td align="right" class='awrnc'>3,677</td></tr>                      
+                                                                                
+<tr><td class='awrc'>Number of User Tables</td><td align="right" class='awrc'>2,
+268</td><td align="right" class='awrc'>1,653</td></tr>                          
+                                                                                
+<tr><td class='awrnc'>Number of physical disks</td><td align="right" class='awrn
+c'>&#160;</td><td align="right" class='awrnc'>&#160;</td></tr>                  
+                                                                                
+<tr><td class='awrc'>Oracle Database instances</td><td align="right" class='awrc
+'>1</td><td align="right" class='awrc'>1</td></tr>                              
+                                                                                
+<tr><td class='awrnc'>Size of Largest Segment (Bytes)</td><td align="right" clas
+s='awrnc'>1,280,311,296</td><td align="right" class='awrnc'>1,031,798,784</td></
+tr>                                                                             
+                                                                                
+<tr><td class='awrc'>number of job runs per day</td><td align="right" class='awr
+c'>220</td><td align="right" class='awrc'>40</td></tr>                          
+                                                                                
+</table><p />                                                                   
+<a class="awr" href="#401">Back to Database Usage Statistics</a>                
+<br /><a class="awr" href="#top">Back to Top</a><p />                           
+<a class="awr" name="10705"></a>                                                
+<h3 class="awr">CPU Usage Statistics</h3>                                       
+<ul>                                                                            
+<li class="awr"> This section displays the Database CPU Usage Statistics</li>   
+</ul>                                                                           
+<table border="1" summary="CPU Usage Statistics. . This section displays the Dat
+abase CPU Usage Statistics"><tr><th class="awrbg" scope="col">Timestamp</th><th 
+class="awrbg" scope="col">CPU Count</th><th class="awrbg" scope="col">CPU Core C
+ount</th><th class="awrbg" scope="col">CPU Socket Count</th></tr>               
+                                                                                
+<tr><td class='awrc'>02/07/13 11:11</td><td align="right" class='awrc'>1</td><td
+ align="right" class='awrc'>1</td><td align="right" class='awrc'>1</td></tr>    
+                                                                                
+<tr><td class='awrnc'>06/05/13 12:08</td><td align="right" class='awrnc'>2</td><
+td align="right" class='awrnc'>2</td><td align="right" class='awrnc'>1</td></tr>
+                                                                                
+</table><p />                                                                   
+<a class="awr" href="#401">Back to Database Usage Statistics</a>                
+<br /><a class="awr" href="#top">Back to Top</a><p />                           
+<p />                                                                           
+End of Report                                                                   
+</body></html>                                                                  
+
+376 rows selected.
+
+SQL> spool off

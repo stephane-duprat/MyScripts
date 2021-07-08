@@ -1,0 +1,315 @@
+
+Option                                               ?                                                                    
+-------------------------------------------------- -----                                                                  
+Active Data Guard                                  TRUE                                                                   
+Advanced Compression                               TRUE                                                                   
+Advanced replication                               TRUE                                                                   
+Application Role                                   TRUE                                                                   
+Backup Encryption                                  TRUE                                                                   
+Basic Compression                                  TRUE                                                                   
+Bit-mapped indexes                                 TRUE                                                                   
+Block Change Tracking                              TRUE                                                                   
+Block Media Recovery                               TRUE                                                                   
+Change Data Capture                                TRUE                                                                   
+Coalesce Index                                     TRUE                                                                   
+
+Option                                               ?                                                                    
+-------------------------------------------------- -----                                                                  
+Connection multiplexing                            TRUE                                                                   
+Connection pooling                                 TRUE                                                                   
+DICOM                                              TRUE                                                                   
+Data Mining                                        TRUE                                                                   
+Database queuing                                   TRUE                                                                   
+Database resource manager                          TRUE                                                                   
+Deferred Segment Creation                          TRUE                                                                   
+Duplexed backups                                   TRUE                                                                   
+Enterprise User Security                           TRUE                                                                   
+Export transportable tablespaces                   TRUE                                                                   
+Fast-Start Fault Recovery                          TRUE                                                                   
+
+Option                                               ?                                                                    
+-------------------------------------------------- -----                                                                  
+File Mapping                                       TRUE                                                                   
+Fine-grained Auditing                              TRUE                                                                   
+Fine-grained access control                        TRUE                                                                   
+Flashback Data Archive                             TRUE                                                                   
+Flashback Database                                 TRUE                                                                   
+Flashback Table                                    TRUE                                                                   
+Incremental backup and recovery                    TRUE                                                                   
+Instead-of triggers                                TRUE                                                                   
+Java                                               TRUE                                                                   
+Join index                                         TRUE                                                                   
+Managed Standby                                    TRUE                                                                   
+
+Option                                               ?                                                                    
+-------------------------------------------------- -----                                                                  
+Materialized view rewrite                          TRUE                                                                   
+OLAP                                               TRUE                                                                   
+OLAP Window Functions                              TRUE                                                                   
+Objects                                            TRUE                                                                   
+Online Index Build                                 TRUE                                                                   
+Online Redefinition                                TRUE                                                                   
+Oracle Data Guard                                  TRUE                                                                   
+Parallel backup and recovery                       TRUE                                                                   
+Parallel execution                                 TRUE                                                                   
+Parallel load                                      TRUE                                                                   
+Partitioning                                       TRUE                                                                   
+
+Option                                               ?                                                                    
+-------------------------------------------------- -----                                                                  
+Plan Stability                                     TRUE                                                                   
+Point-in-time tablespace recovery                  TRUE                                                                   
+Proxy authentication/authorization                 TRUE                                                                   
+Real Application Testing                           TRUE                                                                   
+Result Cache                                       TRUE                                                                   
+SQL Plan Management                                TRUE                                                                   
+Sample Scan                                        TRUE                                                                   
+SecureFiles Encryption                             TRUE                                                                   
+Server Flash Cache                                 TRUE                                                                   
+Spatial                                            TRUE                                                                   
+Streams Capture                                    TRUE                                                                   
+
+Option                                               ?                                                                    
+-------------------------------------------------- -----                                                                  
+Transparent Application Failover                   TRUE                                                                   
+Transparent Data Encryption                        TRUE                                                                   
+Trial Recovery                                     TRUE                                                                   
+Unused Block Compression                           TRUE                                                                   
+XStream                                            TRUE                                                                   
+                                                                                                                          
+Automatic Storage Management                       FALSE                                                                  
+Oracle Database Vault                              FALSE                                                                  
+Oracle Label Security                              FALSE                                                                  
+Real Application Clusters                          FALSE                                                                  
+                                                                                                                          
+
+                                                         Detected Curr.                                                   
+Feature                                       Version      usages used?  First use  Last use                              
+--------------------------------------------- ---------- -------- ------ ---------- ----------                            
+AWR Report                                    11.2.0.3.0       10 FALSE  07/02/2013 07/10/2014                            
+Audit Options                                 11.2.0.3.0       25 TRUE   07/02/2013 03/12/2014                            
+Automatic Maintenance - Optimizer Statistics  11.2.0.3.0       25 TRUE   07/02/2013 03/12/2014                            
+Gathering                                                                                                                 
+                                                                                                                          
+Automatic Maintenance - SQL Tuning Advisor    11.2.0.3.0       25 TRUE   07/02/2013 03/12/2014                            
+Automatic Maintenance - Space Advisor         11.2.0.3.0       25 TRUE   07/02/2013 03/12/2014                            
+Automatic Memory Tuning                       11.2.0.3.0        7 FALSE  07/02/2013 10/06/2013                            
+Automatic SGA Tuning                          11.2.0.3.0       18 TRUE   25/06/2013 03/12/2014                            
+Automatic SQL Execution Memory                11.2.0.3.0       18 TRUE   25/06/2013 03/12/2014                            
+
+                                                         Detected Curr.                                                   
+Feature                                       Version      usages used?  First use  Last use                              
+--------------------------------------------- ---------- -------- ------ ---------- ----------                            
+Automatic Segment Space Management (system)   11.2.0.3.0       25 TRUE   07/02/2013 03/12/2014                            
+Automatic Segment Space Management (user)     11.2.0.3.0       11 TRUE   04/03/2013 03/12/2014                            
+Automatic Undo Management                     11.2.0.3.0       25 TRUE   07/02/2013 03/12/2014                            
+Character Set                                 11.2.0.3.0       25 TRUE   07/02/2013 03/12/2014                            
+Deferred Segment Creation                     11.2.0.3.0       25 TRUE   07/02/2013 03/12/2014                            
+Flashback Data Archive                        11.2.0.3.0        6 FALSE  04/03/2013 10/06/2013                            
+LOB                                           11.2.0.3.0       10 TRUE   04/03/2013 03/12/2014                            
+Locally Managed Tablespaces (system)          11.2.0.3.0       25 TRUE   07/02/2013 03/12/2014                            
+Locally Managed Tablespaces (user)            11.2.0.3.0       25 TRUE   07/02/2013 03/12/2014                            
+Logfile Multiplexing                          11.2.0.3.0       25 TRUE   07/02/2013 03/12/2014                            
+
+                                                         Detected Curr.                                                   
+Feature                                       Version      usages used?  First use  Last use                              
+--------------------------------------------- ---------- -------- ------ ---------- ----------                            
+Oracle Java Virtual Machine (system)          11.2.0.3.0       25 TRUE   07/02/2013 03/12/2014                            
+Oracle Managed Files                          11.2.0.3.0       25 TRUE   07/02/2013 03/12/2014                            
+Oracle Utility Datapump (Export)              11.2.0.3.0        4 FALSE  29/04/2013 22/10/2014                            
+Oracle Utility Datapump (Import)              11.2.0.3.0       12 FALSE  07/02/2013 30/06/2014                            
+Oracle Utility Metadata API                   11.2.0.3.0        5 FALSE  29/04/2013 22/10/2014                            
+Partitioning (system)                         11.2.0.3.0       25 TRUE   07/02/2013 03/12/2014                            
+Partitioning (user)                           11.2.0.3.0       24 TRUE   04/03/2013 03/12/2014                            
+RMAN - Disk Backup                            11.2.0.3.0        6 FALSE  27/05/2013 11/11/2014                            
+Real-Time SQL Monitoring                      11.2.0.3.0        2 FALSE  27/05/2013 25/06/2013                            
+Recovery Area                                 11.2.0.3.0       25 TRUE   07/02/2013 03/12/2014                            
+
+                                                         Detected Curr.                                                   
+Feature                                       Version      usages used?  First use  Last use                              
+--------------------------------------------- ---------- -------- ------ ---------- ----------                            
+Recovery Manager (RMAN)                       11.2.0.3.0        6 FALSE  27/05/2013 11/11/2014                            
+SecureFiles (system)                          11.2.0.3.0       25 TRUE   07/02/2013 03/12/2014                            
+SecureFiles (user)                            11.2.0.3.0       25 TRUE   07/02/2013 03/12/2014                            
+Segment Shrink                                11.2.0.3.0       20 TRUE   29/04/2013 03/12/2014                            
+Server Parameter File                         11.2.0.3.0       25 TRUE   07/02/2013 03/12/2014                            
+Virtual Private Database (VPD)                11.2.0.3.0       25 TRUE   07/02/2013 03/12/2014                            
+                                                                                                                          
+ADDM                                          11.2.0.3.0        0 FALSE                                                   
+ASO native encryption and checksumming        11.2.0.3.0        0 FALSE                                                   
+AWR Baseline                                  11.2.0.3.0        0 FALSE                                                   
+
+                                                         Detected Curr.                                                   
+Feature                                       Version      usages used?  First use  Last use                              
+--------------------------------------------- ---------- -------- ------ ---------- ----------                            
+AWR Baseline Template                         11.2.0.3.0        0 FALSE                                                   
+Active Data Guard - Real-Time Query on Physic 11.2.0.3.0        0 FALSE                                                   
+al Standby                                                                                                                
+                                                                                                                          
+Advanced Replication                          11.2.0.3.0        0 FALSE                                                   
+Application Express                           11.2.0.3.0        0 FALSE                                                   
+Automatic SQL Tuning Advisor                  11.2.0.3.0        0 FALSE                                                   
+Automatic Storage Management                  11.2.0.3.0        0 FALSE                                                   
+Automatic Workload Repository                 11.2.0.3.0        0 FALSE                                                   
+Backup BASIC Compression                      11.2.0.3.0        0 FALSE                                                   
+
+                                                         Detected Curr.                                                   
+Feature                                       Version      usages used?  First use  Last use                              
+--------------------------------------------- ---------- -------- ------ ---------- ----------                            
+Backup BZIP2 Compression                      11.2.0.3.0        0 FALSE                                                   
+Backup Encryption                             11.2.0.3.0        0 FALSE                                                   
+Backup HIGH Compression                       11.2.0.3.0        0 FALSE                                                   
+Backup LOW Compression                        11.2.0.3.0        0 FALSE                                                   
+Backup MEDIUM Compression                     11.2.0.3.0        0 FALSE                                                   
+Backup Rollforward                            11.2.0.3.0        0 FALSE                                                   
+Backup ZLIB Compression                       11.2.0.3.0        0 FALSE                                                   
+Baseline Adaptive Thresholds                  11.2.0.3.0        0 FALSE                                                   
+Baseline Static Computations                  11.2.0.3.0        0 FALSE                                                   
+Bigfile Tablespace                            11.2.0.3.0        0 FALSE                                                   
+
+                                                         Detected Curr.                                                   
+Feature                                       Version      usages used?  First use  Last use                              
+--------------------------------------------- ---------- -------- ------ ---------- ----------                            
+Block Media Recovery                          11.2.0.3.0        0 FALSE                                                   
+CSSCAN                                        11.2.0.3.0        0 FALSE                                                   
+Change Data Capture                           11.2.0.3.0        0 FALSE                                                   
+Change-Aware Incremental Backup               11.2.0.3.0        0 FALSE                                                   
+Character Semantics                           11.2.0.3.0        0 FALSE                                                   
+Client Identifier                             11.2.0.3.0        0 FALSE                                                   
+Clusterwide Global Transactions               11.2.0.3.0        0 FALSE                                                   
+Compression Advisor                           11.2.0.3.0        0 FALSE                                                   
+Crossedition Triggers                         11.2.0.3.0        0 FALSE                                                   
+DBMS_STATS Incremental Maintenance            11.2.0.3.0        0 FALSE                                                   
+
+                                                         Detected Curr.                                                   
+Feature                                       Version      usages used?  First use  Last use                              
+--------------------------------------------- ---------- -------- ------ ---------- ----------                            
+Data Guard                                    11.2.0.3.0        0 FALSE                                                   
+Data Mining                                   11.2.0.3.0        0 FALSE                                                   
+Data Recovery Advisor                         11.2.0.3.0        0 FALSE                                                   
+Database Migration Assistant for Unicode      11.2.0.3.0        0 FALSE                                                   
+Database Replay: Workload Capture             11.2.0.3.0        0 FALSE                                                   
+Database Replay: Workload Replay              11.2.0.3.0        0 FALSE                                                   
+Deferred Open Read Only                       11.2.0.3.0        0 FALSE                                                   
+Direct NFS                                    11.2.0.3.0        0 FALSE                                                   
+Dynamic SGA                                   11.2.0.3.0        0 FALSE                                                   
+EM Database Control                           11.2.0.3.0        0 FALSE                                                   
+
+                                                         Detected Curr.                                                   
+Feature                                       Version      usages used?  First use  Last use                              
+--------------------------------------------- ---------- -------- ------ ---------- ----------                            
+EM Grid Control                               11.2.0.3.0        0 FALSE                                                   
+EM Performance Page                           11.2.0.3.0        0 FALSE                                                   
+Editioning Views                              11.2.0.3.0        0 FALSE                                                   
+Editions                                      11.2.0.3.0        0 FALSE                                                   
+Encrypted Tablespaces                         11.2.0.3.0        0 FALSE                                                   
+Exadata                                       11.2.0.3.0        0 FALSE                                                   
+Extensibility                                 11.2.0.3.0        0 FALSE                                                   
+File Mapping                                  11.2.0.3.0        0 FALSE                                                   
+Flashback Database                            11.2.0.3.0        0 FALSE                                                   
+GoldenGate                                    11.2.0.3.0        0 FALSE                                                   
+
+                                                         Detected Curr.                                                   
+Feature                                       Version      usages used?  First use  Last use                              
+--------------------------------------------- ---------- -------- ------ ---------- ----------                            
+HeapCompression                               11.2.0.3.0        0 FALSE                                                   
+Hybrid Columnar Compression                   11.2.0.3.0        0 FALSE                                                   
+Instance Caging                               11.2.0.3.0        0 FALSE                                                   
+Internode Parallel Execution                  11.2.0.3.0        0 FALSE                                                   
+Job Scheduler                                 11.2.0.3.0        0 FALSE                                                   
+Label Security                                11.2.0.3.0        0 FALSE                                                   
+Locator                                       11.2.0.3.0        0 FALSE                                                   
+Long-term Archival Backup                     11.2.0.3.0        0 FALSE                                                   
+MTTR Advisor                                  11.2.0.3.0        0 FALSE                                                   
+Materialized Views (User)                     11.2.0.3.0        0 FALSE                                                   
+
+                                                         Detected Curr.                                                   
+Feature                                       Version      usages used?  First use  Last use                              
+--------------------------------------------- ---------- -------- ------ ---------- ----------                            
+Messaging Gateway                             11.2.0.3.0        0 FALSE                                                   
+Multi Section Backup                          11.2.0.3.0        0 FALSE                                                   
+Multiple Block Sizes                          11.2.0.3.0        0 FALSE                                                   
+OLAP - Analytic Workspaces                    11.2.0.3.0        0 FALSE                                                   
+OLAP - Cubes                                  11.2.0.3.0        0 FALSE                                                   
+Object                                        11.2.0.3.0        0 FALSE                                                   
+Oracle Database Vault                         11.2.0.3.0        0 FALSE                                                   
+Oracle Java Virtual Machine (user)            11.2.0.3.0        0 FALSE                                                   
+Oracle Multimedia                             11.2.0.3.0        0 FALSE                                                   
+Oracle Multimedia DICOM                       11.2.0.3.0        0 FALSE                                                   
+
+                                                         Detected Curr.                                                   
+Feature                                       Version      usages used?  First use  Last use                              
+--------------------------------------------- ---------- -------- ------ ---------- ----------                            
+Oracle Secure Backup                          11.2.0.3.0        0 FALSE                                                   
+Oracle Text                                   11.2.0.3.0        0 FALSE                                                   
+Oracle Utility External Table                 11.2.0.3.0        0 FALSE                                                   
+Oracle Utility SQL Loader (Direct Path Load)  11.2.0.3.0        0 FALSE                                                   
+PL/SQL Native Compilation                     11.2.0.3.0        0 FALSE                                                   
+Parallel SQL DDL Execution                    11.2.0.3.0        0 FALSE                                                   
+Parallel SQL DML Execution                    11.2.0.3.0        0 FALSE                                                   
+Parallel SQL Query Execution                  11.2.0.3.0        0 FALSE                                                   
+Quality of Service Management                 11.2.0.3.0        0 FALSE                                                   
+RMAN - Tape Backup                            11.2.0.3.0        0 FALSE                                                   
+
+                                                         Detected Curr.                                                   
+Feature                                       Version      usages used?  First use  Last use                              
+--------------------------------------------- ---------- -------- ------ ---------- ----------                            
+Read Only Tablespace                          11.2.0.3.0        0 FALSE                                                   
+Real Application Clusters (RAC)               11.2.0.3.0        0 FALSE                                                   
+Resource Manager                              11.2.0.3.0        0 FALSE                                                   
+Restore Point                                 11.2.0.3.0        0 FALSE                                                   
+Result Cache                                  11.2.0.3.0        0 FALSE                                                   
+Rules Manager                                 11.2.0.3.0        0 FALSE                                                   
+SQL Access Advisor                            11.2.0.3.0        0 FALSE                                                   
+SQL Monitoring and Tuning pages               11.2.0.3.0        0 FALSE                                                   
+SQL Performance Analyzer                      11.2.0.3.0        0 FALSE                                                   
+SQL Plan Management                           11.2.0.3.0        0 FALSE                                                   
+
+                                                         Detected Curr.                                                   
+Feature                                       Version      usages used?  First use  Last use                              
+--------------------------------------------- ---------- -------- ------ ---------- ----------                            
+SQL Profile                                   11.2.0.3.0        0 FALSE                                                   
+SQL Repair Advisor                            11.2.0.3.0        0 FALSE                                                   
+SQL Tuning Advisor                            11.2.0.3.0        0 FALSE                                                   
+SQL Tuning Set (system)                       11.2.0.3.0        0 FALSE                                                   
+SQL Tuning Set (user)                         11.2.0.3.0        0 FALSE                                                   
+SQL Workload Manager                          11.2.0.3.0        0 FALSE                                                   
+SecureFile Compression (system)               11.2.0.3.0        0 FALSE                                                   
+SecureFile Compression (user)                 11.2.0.3.0        0 FALSE                                                   
+SecureFile Deduplication (system)             11.2.0.3.0        0 FALSE                                                   
+SecureFile Deduplication (user)               11.2.0.3.0        0 FALSE                                                   
+
+                                                         Detected Curr.                                                   
+Feature                                       Version      usages used?  First use  Last use                              
+--------------------------------------------- ---------- -------- ------ ---------- ----------                            
+SecureFile Encryption (system)                11.2.0.3.0        0 FALSE                                                   
+SecureFile Encryption (user)                  11.2.0.3.0        0 FALSE                                                   
+Segment Advisor (user)                        11.2.0.3.0        0 FALSE                                                   
+Semantics/RDF                                 11.2.0.3.0        0 FALSE                                                   
+Server Flash Cache                            11.2.0.3.0        0 FALSE                                                   
+Services                                      11.2.0.3.0        0 FALSE                                                   
+Shared Server                                 11.2.0.3.0        0 FALSE                                                   
+Spatial                                       11.2.0.3.0        0 FALSE                                                   
+Streams (system)                              11.2.0.3.0        0 FALSE                                                   
+Streams (user)                                11.2.0.3.0        0 FALSE                                                   
+
+                                                         Detected Curr.                                                   
+Feature                                       Version      usages used?  First use  Last use                              
+--------------------------------------------- ---------- -------- ------ ---------- ----------                            
+Transparent Data Encryption                   11.2.0.3.0        0 FALSE                                                   
+Transparent Gateway                           11.2.0.3.0        0 FALSE                                                   
+Transportable Tablespace                      11.2.0.3.0        0 FALSE                                                   
+Tune MView                                    11.2.0.3.0        0 FALSE                                                   
+Undo Advisor                                  11.2.0.3.0        0 FALSE                                                   
+Very Large Memory                             11.2.0.3.0        0 FALSE                                                   
+Workspace Manager                             11.2.0.3.0        0 FALSE                                                   
+XDB                                           11.2.0.3.0        0 FALSE                                                   
+XStream In                                    11.2.0.3.0        0 FALSE                                                   
+XStream Out                                   11.2.0.3.0        0 FALSE                                                   
+
+                                                         Detected Curr.                                                   
+Feature                                       Version      usages used?  First use  Last use                              
+--------------------------------------------- ---------- -------- ------ ---------- ----------                            
+XStream Streams                               11.2.0.3.0        0 FALSE                                                   
+                                                                                                                          
+SQL> spool off

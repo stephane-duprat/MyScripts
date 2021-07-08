@@ -1,0 +1,4 @@
+insert into FIDES.WL_METRICS
+select WL_ID_USER_TYPE, add_months(WL_DATE,-1),WL_ID_METRIC_TYPE, WL_METRIC_VALUE-mod(WL_METRIC_VALUE,3)
+from FIDES.WL_METRICS where trunc(WL_DATE) = to_date('16/12/2013','DD/MM/YYYY')
+/

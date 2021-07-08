@@ -1,0 +1,189 @@
+A. sacar un informe detallado de ocupación AWR
+***********************************************
+
+@$ORACLE_HOME/rdbms/admin/awrinfo.sql 
+
+B. Del informe generado, aislar en un fichero "t" el capitulo "(3b) Space usage within AWR Components (> 500K)"
+****************************************************************************************************************
+
+
+C. Sobre el fichero "t", generar sentencias de reorganización
+*************************************************************
+
+grep TABLE t | grep -v PARTITION | awk '{ print "alter table "$3" enable row movement;" }'
+
+alter table WRH$_RSRC_CONSUMER_GROUP enable row movement;
+alter table WRH$_SHARED_POOL_ADVICE enable row movement;
+alter table WRH$_MUTEX_SLEEP enable row movement;
+alter table WRH$_BG_EVENT_SUMMARY enable row movement;
+alter table WRH$_ENQUEUE_STAT enable row movement;
+alter table WRH$_LIBRARYCACHE enable row movement;
+alter table WRH$_EVENT_NAME enable row movement;
+alter table WRH$_SQL_WORKAREA_HISTOGRAM enable row movement;
+alter table WRH$_SQL_SUMMARY enable row movement;
+alter table WRH$_TABLESPACE_SPACE_USAGE enable row movement;
+alter table WRH$_IOSTAT_FILETYPE enable row movement;
+alter table WRH$_SEG_STAT_OBJ enable row movement;
+alter table WRH$_TEMPSTATXS enable row movement;
+alter table WRH$_SQL_PLAN enable row movement;
+alter table WRH$_CR_BLOCK_SERVER enable row movement;
+alter table WRH$_CURRENT_BLOCK_SERVER enable row movement;
+alter table WRH$_SQL_BIND_METADATA enable row movement;
+alter table WRH$_SQLTEXT enable row movement;
+
+grep TABLE t | grep -v PARTITION | awk '{ print "alter table "$3" shrink space;" }'
+
+alter table WRH$_RSRC_CONSUMER_GROUP shrink space;
+alter table WRH$_SHARED_POOL_ADVICE shrink space;
+alter table WRH$_MUTEX_SLEEP shrink space;
+alter table WRH$_BG_EVENT_SUMMARY shrink space;
+alter table WRH$_ENQUEUE_STAT shrink space;
+alter table WRH$_LIBRARYCACHE shrink space;
+alter table WRH$_EVENT_NAME shrink space;
+alter table WRH$_SQL_WORKAREA_HISTOGRAM shrink space;
+alter table WRH$_SQL_SUMMARY shrink space;
+alter table WRH$_TABLESPACE_SPACE_USAGE shrink space;
+alter table WRH$_IOSTAT_FILETYPE shrink space;
+alter table WRH$_SEG_STAT_OBJ shrink space;
+alter table WRH$_TEMPSTATXS shrink space;
+alter table WRH$_SQL_PLAN shrink space;
+alter table WRH$_CR_BLOCK_SERVER shrink space;
+alter table WRH$_CURRENT_BLOCK_SERVER shrink space;
+alter table WRH$_SQL_BIND_METADATA shrink space;
+alter table WRH$_SQLTEXT shrink space;
+
+grep INDEX t | grep -v PARTITION | awk '{ print "alter index "$3" rebuild;" }'
+
+alter index WRH$_SYSMETRIC_SUMMARY_INDEX rebuild;
+alter index WRH$_TS_SPACE_USAGE_IND rebuild;
+alter index WRH$_RSRC_CONSUMER_GROUP_PK rebuild;
+alter index WRH$_BG_EVENT_SUMMARY_PK rebuild;
+alter index WRH$_ENQUEUE_STAT_PK rebuild;
+alter index WRH$_LIBRARYCACHE_PK rebuild;
+alter index WRH$_EVENT_NAME_PK rebuild;
+alter index WRH$_SQL_WORKAREA_HIST_PK rebuild;
+alter index WRH$_IOSTAT_FILETYPE_PK rebuild;
+alter index WRH$_SEG_STAT_OBJ_PK rebuild;
+alter index WRH$_SEG_STAT_OBJ_INDEX rebuild;
+alter index WRH$_SQL_PLAN_PK rebuild;
+alter index WRH$_SQL_BIND_METADATA_PK rebuild;
+alter index WRH$_SQLTEXT_PK rebuild;
+
+
+grep INDEX t | grep PARTITION | awk '{ split($3,arr,".") ; print "alter index "arr[1]" rebuild partition "arr[2]";" }'
+
+alter index WRH$_SYSSTAT_PK rebuild partition WRH$_SYSSTA_161623299_0;
+alter index WRH$_SYSSTAT_PK rebuild partition WRH$_SYSSTA_425681485_0;
+alter index WRH$_LATCH_PK rebuild partition WRH$_LATCH_161623299_0;
+alter index WRH$_LATCH_PK rebuild partition WRH$_LATCH_425681485_0;
+alter index WRH$_LATCH_PK rebuild partition WRH$_LATCH_647188419_0;
+alter index WRH$_LATCH_MISSES_SUMMARY_PK rebuild partition WRH$_LATCH__161623299_0;
+alter index WRH$_LATCH_MISSES_SUMMARY_PK rebuild partition WRH$_LATCH__647188419_0;
+alter index WRH$_LATCH_MISSES_SUMMARY_PK rebuild partition WRH$_LATCH__425681485_0;
+alter index WRH$_PARAMETER_PK rebuild partition WRH$_PARAME_161623299_0;
+alter index WRH$_PARAMETER_PK rebuild partition WRH$_PARAME_425681485_0;
+alter index WRH$_EVENT_HISTOGRAM_PK rebuild partition WRH$_EVENT__161623299_0;
+alter index WRH$_EVENT_HISTOGRAM_PK rebuild partition WRH$_EVENT__425681485_0;
+alter index WRH$_SYSTEM_EVENT_PK rebuild partition WRH$_SYSTEM_161623299_0;
+alter index WRH$_SYSTEM_EVENT_PK rebuild partition WRH$_SYSTEM_647188419_0;
+alter index WRH$_SYSTEM_EVENT_PK rebuild partition WRH$_SYSTEM_425681485_0;
+alter index WRH$_EVENT_HISTOGRAM_PK rebuild partition WRH$_EVENT__4140483279_0;
+alter index WRH$_EVENT_HISTOGRAM_PK rebuild partition WRH$_EVENT__243561075_0;
+alter index WRH$_SYSTEM_EVENT_PK rebuild partition WRH$_SYSTEM_243561075_0;
+alter index WRH$_SYSTEM_EVENT_PK rebuild partition WRH$_SYSTEM_4140483279_0;
+alter index WRH$_SQLSTAT_PK rebuild partition WRH$_SQLSTA_647188419_0;
+alter index WRH$_SQLSTAT_PK rebuild partition WRH$_SQLSTA_161623299_0;
+alter index WRH$_SQLSTAT_PK rebuild partition WRH$_SQLSTA_425681485_0;
+alter index WRH$_SQLSTAT_INDEX rebuild partition WRH$_SQLSTA_647188419_0;
+alter index WRH$_SQLSTAT_INDEX rebuild partition WRH$_SQLSTA_161623299_0;
+alter index WRH$_SQLSTAT_INDEX rebuild partition WRH$_SQLSTA_425681485_0;
+alter index WRH$_SQLSTAT_PK rebuild partition WRH$_SQLSTA_4140483279_0;
+alter index WRH$_SQLSTAT_INDEX rebuild partition WRH$_SQLSTA_4140483279_0;
+alter index WRH$_SQLSTAT_PK rebuild partition WRH$_SQLSTA_243561075_0;
+alter index WRH$_SQLSTAT_INDEX rebuild partition WRH$_SQLSTA_243561075_0;
+alter index WRH$_SEG_STAT_PK rebuild partition WRH$_SEG_ST_161623299_0;
+alter index WRH$_SEG_STAT_PK rebuild partition WRH$_SEG_ST_425681485_0;
+alter index WRH$_FILESTATXS_PK rebuild partition WRH$_FILEST_425681485_0;
+alter index WRH$_SEG_STAT_PK rebuild partition WRH$_SEG_ST_4140483279_0;
+alter index WRH$_SEG_STAT_PK rebuild partition WRH$_SEG_ST_243561075_0;
+alter index WRH$_FILESTATXS_PK rebuild partition WRH$_FILEST_161623299_0;
+alter index WRH$_FILESTATXS_PK rebuild partition WRH$_FILEST_647188419_0;
+alter index WRH$_FILESTATXS_PK rebuild partition WRH$_FILEST_4140483279_0;
+alter index WRH$_TABLESPACE_STAT_PK rebuild partition WRH$_TABLES_4140483279_0;
+alter index WRH$_TABLESPACE_STAT_PK rebuild partition WRH$_TABLES_425681485_0;
+alter index WRH$_DLM_MISC_PK rebuild partition WRH$_DLM_MI_161623299_0;
+alter index WRH$_DLM_MISC_PK rebuild partition WRH$_DLM_MI_425681485_0;
+alter index WRH$_ACTIVE_SESSION_HISTORY_PK rebuild partition WRH$_ACTIVE_4140483279_0;
+alter index WRH$_ACTIVE_SESSION_HISTORY_PK rebuild partition WRH$_ACTIVE_161623299_0;
+alter index WRH$_ACTIVE_SESSION_HISTORY_PK rebuild partition WRH$_ACTIVE_425681485_0;
+alter index WRH$_ACTIVE_SESSION_HISTORY_PK rebuild partition WRH$_ACTIVE_243561075_0;
+
+grep TABLE t | grep PARTITION | awk '{ split($3,arr,".") ; print "alter table "arr[1]" enable row movement;" }' | sort -u
+
+alter table WRH$_ACTIVE_SESSION_HISTORY enable row movement;
+alter table WRH$_DLM_MISC enable row movement;
+alter table WRH$_EVENT_HISTOGRAM enable row movement;
+alter table WRH$_FILESTATXS enable row movement;
+alter table WRH$_LATCH enable row movement;
+alter table WRH$_LATCH_MISSES_SUMMARY enable row movement;
+alter table WRH$_PARAMETER enable row movement;
+alter table WRH$_SEG_STAT enable row movement;
+alter table WRH$_SERVICE_STAT enable row movement;
+alter table WRH$_SQLSTAT enable row movement;
+alter table WRH$_SYSSTAT enable row movement;
+alter table WRH$_SYSTEM_EVENT enable row movement;
+alter table WRH$_TABLESPACE_STAT enable row movement;
+alter table WRH$_TABLESPACE_STAT_PK enable row movement;
+
+
+grep TABLE t | grep PARTITION | awk '{ split($3,arr,".") ; print "alter table "arr[1]" shrink space;" }' | sort -u
+
+alter table WRH$_ACTIVE_SESSION_HISTORY shrink space;
+alter table WRH$_DLM_MISC shrink space;
+alter table WRH$_EVENT_HISTOGRAM shrink space;
+alter table WRH$_FILESTATXS shrink space;
+alter table WRH$_LATCH_MISSES_SUMMARY shrink space;
+alter table WRH$_LATCH shrink space;
+alter table WRH$_PARAMETER shrink space;
+alter table WRH$_SEG_STAT shrink space;
+alter table WRH$_SERVICE_STAT shrink space;
+alter table WRH$_SQLSTAT shrink space;
+alter table WRH$_SYSSTAT shrink space;
+alter table WRH$_SYSTEM_EVENT shrink space;
+alter table WRH$_TABLESPACE_STAT_PK shrink space;
+alter table WRH$_TABLESPACE_STAT shrink space;
+
+D. sacar un informe detallado de ocupación AWR
+***********************************************
+
+@$ORACLE_HOME/rdbms/admin/awrinfo.sql 
+
+Y comparar con el primero (Punto A)
+
+E. Redimensionar, si acaso, los datafiles de SYSAUX
+***************************************************
+
+
+col file_name format a50
+set lines 140
+
+select ddf.file_name
+       ,ddf.tablespace_name
+       ,sum(dfs.bytes)/1024/1024 free_space
+ from dba_data_files ddf, dba_free_space dfs
+ where ddf.file_id = dfs.file_id
+   and ddf.tablespace_name = 'SYSAUX'
+ group by ddf.file_name,ddf.tablespace_name;
+
+
+FILE_NAME					   TABLESPACE_NAME		  FREE_SPACE
+-------------------------------------------------- ------------------------------ ----------
+/u03/oradata/REPAWR/datafile/tbs_sysaux01.dbf	   SYSAUX			   8068.9375
+
+
+alter database datafile '...' resize ...;
+
+F. Después de cada AWRLOAD, colectar estadisticas de diccionario
+****************************************************************
+
+exec dbms_stats.gather_dictionary_stats
