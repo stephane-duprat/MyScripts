@@ -1,0 +1,2 @@
+select sid, serial#, opname , target, sofar,elapsed_seconds, time_remaining from v$session_longops where sid= 166 and serial# = 23298
+/
