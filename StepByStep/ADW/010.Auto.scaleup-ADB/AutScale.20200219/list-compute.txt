@@ -1,0 +1,2 @@
+DB201910132007;ADW;ocid1.autonomousdatabase.oc1.eu-frankfurt-1.abtheljtpu2qqxpuso3fnrm7rjww3qihqqvg27pcoelcqx5gfbguecn3q4eq
+ADWBI;ADW;ocid1.autonomousdatabase.oc1.eu-frankfurt-1.abtheljtwowvo2kunuyxkbooabel4xzpb5eh7srgqolm7yynajfszizubbca
