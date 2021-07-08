@@ -1,0 +1,102 @@
+A. En OCI: crear VCN y recursos asociados:
+******************************************
+
+Primero la VCN:
+---------------
+VCN: skynet
+Create Virtual Cloud Network only => CHECK
+CIDR Block: 172.16.0.0/16
+Pantallazo: 001.Create.VCN.2019-01-16 10-29-28.png
+
+Luego creamos un DRG:
+---------------------
+
+Name: skydrg
+
+Pantallazo: 002.Create.DRG.Screenshot from 2019-01-16 10-32-56.png
+
+Attachar el DRG a la VCN:
+-------------------------
+
+Pantallazo: 003.Attach.DRG.to.VCN.Screenshot from 2019-01-16 10-34-47.png
+
+Crear una route table:
+----------------------
+
+Creamos una route table para dirigir el trafico hacia el CIDR on-premise (en nuestro caso 10.0.0.0/16) por el DRG.
+
+Pantallazo: 004.Create.VPN.Route.Table.Screenshot from 2019-01-16 10-40-08.png
+
+Asociar la nueva route table a una subnet o varias subnets.
+
+Crear una Security List:
+------------------------
+
+Name: skynet-sl-vpn
+
+Regla Ingress: Source CIDR = 10.0.0.0/16, all protocols
+Regla Egress: Destination CIDR = 10.0.0.0/16, all protocols
+
+NB: esta lista SOLO se puede asignar a una subred privada !!!!!!
+
+Pantallazo: 005.Create.Security.List.for.VPN.Screenshot from 2019-01-16 10-49-08.png
+
+Crear una subred privada:
+-------------------------
+
+Creamos una subred PRIVADA en AD-1:
+
+Name: skynet-priv-ad1
+CIDR Block: 172.16.1.0/24
+Route table: skynet-vpn
+PRIVATE SUBNET: CHECK
+Security List: skynet-sl-vpn
+
+Pantallazos: 006.Create.Private.Subnet.Screenshot from 2019-01-16 10-54-05.png y 007.Create.Private.Subnet.Screenshot from 2019-01-16 10-54-57.png
+
+B. Compute en la subred privada:
+********************************
+
+Pantallazos: 008.Create.Compute.Screenshot from 2019-01-16 10-58-02.png, 009.Create.Compute.Screenshot from 2019-01-16 10-58-50.png y 010.Create.Compute.Screenshot from 2019-01-16 10-59-27.png
+
+Nos asigna la IP privada: 172.16.1.2
+
+
+C. Configurar CPE e IPSEC:
+**************************
+
+Ip Publica del on-premise: 130.61.64.213
+
+Crear el Customer Premise Equipment:
+------------------------------------
+
+Name: skynet-cpe
+Pantallazo: 011.Create.CPE.Screenshot from 2019-01-16 11-03-46.png
+
+Crear una IPSEC connection entre el CPE y el DRG:
+-------------------------------------------------
+
+Name: skynet-ipsec-1
+CPE: skynet-cpe
+Static Route CIDR: 10.0.0.0/16
+
+Pantallazo: 012.Create.IPSEC.Screenshot from 2019-01-16 11-07-16.png
+
+Esto nos da la información de los dos tuneles:
+
+130.61.6.53 i1jbtM8PPSxiJLaYu6qG0FF8QEEj7WzCq8t9aNDUdUZgmQEhQj08pKbHliQNcaUv
+130.61.7.50 bfWk1rDgidTDuoxtZENiQspz48yshaX4YDXM4P1tMVWgn39rSxGFQ7vQ632Zi274
+
+Pantallazo: 013.Tuneles.Screenshot from 2019-01-16 11-16-44.png
+
+NB: logicamente estos tuneles estan DOWN, ahora hay que seguir con la configuración ON-PREMISE !!!
+
+
+
+
+
+
+
+
+
+

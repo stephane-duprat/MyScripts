@@ -1,0 +1,38 @@
+
+PAR de lectura sobre el fichero: https://objectstorage.eu-frankfurt-1.oraclecloud.com/p/u1_L4MUoPLPotdgtcnpg6jxFQ7wwkCM1zKM8IqWwGQw/n/wedoinfra/b/SSB/o/SSB.DWDATE.txt
+PAR de escritura sobre el bucket de destino: https://objectstorage.eu-frankfurt-1.oraclecloud.com/p/Gz_9EFuLg73gIcz3LPGyqLqCm3g0aWGjT2Ebg_kAdgQ/n/frmd0ia19p3d/b/TMP/o/
+
+
+mkfifo SSB.DWDATE.txt.fifo
+
+nohup curl -H "Tranfer-Encoding: chunked" -F file=@SSB.DWDATE.txt.fifo https://objectstorage.eu-frankfurt-1.oraclecloud.com/p/Gz_9EFuLg73gIcz3LPGyqLqCm3g0aWGjT2Ebg_kAdgQ/n/frmd0ia19p3d/b/TMP/o/ &
+
+[opc@cn-bench ~]$ jobs
+[1]+  Running                 nohup curl -H "Tranfer-Encoding: chunked" -F file=@SSB.DWDATE.txt.fifo https://objectstorage.eu-frankfurt-1.oraclecloud.com/p/Gz_9EFuLg73gIcz3LPGyqLqCm3g0aWGjT2Ebg_kAdgQ/n/frmd0ia19p3d/b/TMP/o/ &
+
+
+curl -o /home/opc/SSB.DWDATE.txt.fifo https://objectstorage.eu-frankfurt-1.oraclecloud.com/p/u1_L4MUoPLPotdgtcnpg6jxFQ7wwkCM1zKM8IqWwGQw/n/wedoinfra/b/SSB/o/SSB.DWDATE.txt
+
+
+curl -H "Tranfer-Encoding: chunked" -F "file=@SSB.DWDATE.txt" https://objectstorage.eu-frankfurt-1.oraclecloud.com/p/Gz_9EFuLg73gIcz3LPGyqLqCm3g0aWGjT2Ebg_kAdgQ/n/frmd0ia19p3d/b/TMP/o/
+
+curl -k -vX PUT -T "/home/opc/SSB.DWDATE.txt" https://objectstorage.eu-frankfurt-1.oraclecloud.com/p/Gz_9EFuLg73gIcz3LPGyqLqCm3g0aWGjT2Ebg_kAdgQ/n/frmd0ia19p3d/b/TMP/o/  => OK
+
+
+nohup curl -v -H "Tranfer-Encoding: chunked" -F file=@/home/opc/SSB.DWDATE.txt.fifo https://objectstorage.eu-frankfurt-1.oraclecloud.com/p/Gz_9EFuLg73gIcz3LPGyqLqCm3g0aWGjT2Ebg_kAdgQ/n/frmd0ia19p3d/b/TMP/o/ &
+
+
+
+nohup  curl -v \
+    --request POST \
+    --include \
+    --header 'Content-Type: text/csv' \
+    -H "Tranfer-Encoding: chunked" \
+    --data-binary @SSB.DWDATE.txt.fifo \
+    --no-buffer \
+    https://objectstorage.eu-frankfurt-1.oraclecloud.com/p/Gz_9EFuLg73gIcz3LPGyqLqCm3g0aWGjT2Ebg_kAdgQ/n/frmd0ia19p3d/b/TMP/o/tt.txt &
+
+
+echo "time=`uptime`" | curl -k -vX PUT -d @- https://objectstorage.eu-frankfurt-1.oraclecloud.com/p/Gz_9EFuLg73gIcz3LPGyqLqCm3g0aWGjT2Ebg_kAdgQ/n/frmd0ia19p3d/b/TMP/o/
+
+date | curl -F "file=@-;filename=fun.txt" https://objectstorage.eu-frankfurt-1.oraclecloud.com/p/Gz_9EFuLg73gIcz3LPGyqLqCm3g0aWGjT2Ebg_kAdgQ/n/frmd0ia19p3d/b/TMP/o/

@@ -1,0 +1,49 @@
+Destination tenancy OCID: ocid1.tenancy.oc1..aaaaaaaanws4oifjsjatcxnvngqqfa7p2htaoqt6uvxgtswn2bsdmgpafi3q
+
+Source tenancy OCID: ocid1.tenancy.oc1..aaaaaaaaccrdrt4k37tjev6fhheoqvezozo6unvffeykgkkby3nqzkjzf2yq
+
+Group in source tenancy OCID: ocid1.group.oc1..aaaaaaaawlfq5yg3lfr3ag7mv7tv7qh5iodyjcsqxsfbwwwvjuoof3ggnmua
+
+A. En el source tenancy, crear un grupo:
+****************************************
+
+	=> Pantallazo 001
+	=> Group in source tenancy OCID: ocid1.group.oc1..aaaaaaaawlfq5yg3lfr3ag7mv7tv7qh5iodyjcsqxsfbwwwvjuoof3ggnmua
+	=> Group name: Group4CrossTenanciesCopy
+
+B. Incluir mi usuario al nuevo grupo:
+*************************************
+
+	=> Pantallazo 002
+
+C. En el source tenancy, crear una politica:
+********************************************
+
+	=> Crear la politica (pantallazos 003,004,005)
+
+		Nombre: CopyAccrossTenanciesPolicy
+
+define tenancy CopyDestinationTenancy as ocid1.tenancy.oc1..aaaaaaaanws4oifjsjatcxnvngqqfa7p2htaoqt6uvxgtswn2bsdmgpafi3q
+endorse group Group4CrossTenanciesCopy to {OBJECT_READ, OBJECT_CREATE, OBJECT_OVERWRITE, OBJECT_INSPECT, OBJECT_DELETE} in tenancy CopyDestinationTenancy
+
+NB: al tener una sentencia ENDORSE, esta politica hay que deinirla a nivel del ROOT compartment !!!!
+
+D. Definir una politica en el destination tenancy:
+**************************************************
+
+	=> Crear la politica (pantallazos 006,007,008)
+
+	=> Nombre: CopyAccrossTenanciesPolicy  <=== No tiene porque llamrse igual que la politica que hemos creado en el source tenancy !!!!
+
+define tenancy CopySourceTenancy as ocid1.tenancy.oc1..aaaaaaaaccrdrt4k37tjev6fhheoqvezozo6unvffeykgkkby3nqzkjzf2yq
+define group CopySourceGroup as ocid1.group.oc1..aaaaaaaawlfq5yg3lfr3ag7mv7tv7qh5iodyjcsqxsfbwwwvjuoof3ggnmua
+admit group CopySourceGroup of tenancy CopySourceTenancy to {OBJECT_READ, OBJECT_CREATE, OBJECT_OVERWRITE, OBJECT_INSPECT, OBJECT_DELETE} in tenancy
+
+NB: crear esta politica en el ROOT compartment !!!
+
+E. Probar una copia entre los dos tenancies:
+********************************************
+
+El Object Storage Namespace de destino (Tenancy stefcloud) es: frmd0ia19p3d
+
+

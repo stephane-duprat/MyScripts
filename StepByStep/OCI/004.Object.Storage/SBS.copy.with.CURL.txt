@@ -1,0 +1,2 @@
+a. Crear un bucket en Object Storage + un PAR => esto devuelve la URL del PAR.
+b. curl -X PUT --data-binary @file.zyz https://objectstorage.eu-frankfurt-1.oraclecloud.com/p/S1EvPpe1ht7LAgyF9cfeP70hkJNbzm2P5u_auYgQN78/n/pocaccenturesalut/b/bucketacn/o/file.zyz

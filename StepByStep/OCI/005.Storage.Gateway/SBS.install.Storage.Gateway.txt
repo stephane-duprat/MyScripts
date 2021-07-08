@@ -1,0 +1,534 @@
+Ref: 
+	- https://docs.cloud.oracle.com/iaas/Content/StorageGateway/Tasks/installingstoragegateway.htm
+	- https://cloud.oracle.com/en_US/storage/storage-gateway/faq
+
+A. Download OCI Storage Gateway tarball:
+****************************************
+
+https://docs.cloud.oracle.com/iaas/tools/ocisg/latest/ocisg-1.1.tar.gz
+
+B.scp tarball:
+**************
+
+stef@stef-TECRA-Z40t-C:/media/Data/oracle/Distribs/OCI.Storage.Gateway$ scp -i /media/Data/Preventa/TMP/sshkeybundle/privaKey ocisg-1.1.tar.gz  opc@clicn01:/tmp
+ocisg-1.1.tar.gz                                                                          100%  847MB   6.4MB/s   02:12    
+
+C. Extract the files from the downloaded ocisg-1.1.tar.gz file:
+***************************************************************
+
+cd $HOME
+
+[opc@clicn01 ~]$ tar xvzf /tmp/ocisg-1.1.tar.gz
+ocisg-1.1/
+ocisg-1.1/ocisg:1.1.tar
+ocisg-1.1/ocisg
+ocisg-1.1/ocisg-install.sh
+ocisg-1.1/ocisg-config.sh
+ocisg-1.1/helper-install-ocisg.sh
+ocisg-1.1/ocisg-control.sh
+ocisg-1.1/OCISG_README.txt
+ocisg-1.1/support-bundle.sh
+ocisg-1.1/health-check.sh
+
+D. Run the installation script as sudo or root user:
+****************************************************
+
+cd ocisg-1.1
+
+sudo ./ocisg-install.sh -a
+
+Docker does not appear to be installed. Do you want to install docker engine with yum? [y/N] y
+Loaded plugins: langpacks, ulninfo
+ol7_UEKR5                                                                                            | 2.5 kB  00:00:00     
+ol7_addons                                                                                           | 2.5 kB  00:00:00     
+ol7_developer                                                                                        | 2.5 kB  00:00:00     
+ol7_developer_EPEL                                                                                   | 2.5 kB  00:00:00     
+ol7_ksplice                                                                                          | 2.5 kB  00:00:00     
+ol7_latest                                                                                           | 3.0 kB  00:00:00     
+ol7_optional_latest                                                                                  | 2.5 kB  00:00:00     
+ol7_software_collections                                                                             | 2.5 kB  00:00:00     
+(1/2): ol7_ksplice/primary_db                                                                        | 306 kB  00:00:00     
+(2/2): ol7_developer_EPEL/x86_64/primary_db                                                          | 9.4 MB  00:00:00     
+Resolving Dependencies
+--> Running transaction check
+---> Package docker-engine.x86_64 0:18.03.1.ol-0.0.9.el7 will be installed
+--> Processing Dependency: container-selinux >= 2.9 for package: docker-engine-18.03.1.ol-0.0.9.el7.x86_64
+--> Processing Dependency: pigz for package: docker-engine-18.03.1.ol-0.0.9.el7.x86_64
+--> Running transaction check
+---> Package container-selinux.noarch 2:2.21-1.el7 will be installed
+---> Package pigz.x86_64 0:2.3.4-1.el7 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+============================================================================================================================
+ Package                          Arch                  Version                             Repository                 Size
+============================================================================================================================
+Installing:
+ docker-engine                    x86_64                18.03.1.ol-0.0.9.el7                ol7_addons                 35 M
+Installing for dependencies:
+ container-selinux                noarch                2:2.21-1.el7                        ol7_addons                 28 k
+ pigz                             x86_64                2.3.4-1.el7                         ol7_addons                 80 k
+
+Transaction Summary
+============================================================================================================================
+Install  1 Package (+2 Dependent packages)
+
+Total download size: 35 M
+Installed size: 151 M
+Downloading packages:
+(1/3): container-selinux-2.21-1.el7.noarch.rpm                                                       |  28 kB  00:00:00     
+(2/3): pigz-2.3.4-1.el7.x86_64.rpm                                                                   |  80 kB  00:00:00     
+(3/3): docker-engine-18.03.1.ol-0.0.9.el7.x86_64.rpm                                                 |  35 MB  00:00:00     
+----------------------------------------------------------------------------------------------------------------------------
+Total                                                                                        90 MB/s |  35 MB  00:00:00     
+Running transaction check
+Running transaction test
+Transaction test succeeded
+Running transaction
+  Installing : 2:container-selinux-2.21-1.el7.noarch                                                                    1/3 
+  Installing : pigz-2.3.4-1.el7.x86_64                                                                                  2/3 
+  Installing : docker-engine-18.03.1.ol-0.0.9.el7.x86_64                                                                3/3 
+xfs_info: /var/lib is not a mounted XFS filesystem
+  Verifying  : pigz-2.3.4-1.el7.x86_64                                                                                  1/3 
+  Verifying  : docker-engine-18.03.1.ol-0.0.9.el7.x86_64                                                                2/3 
+  Verifying  : 2:container-selinux-2.21-1.el7.noarch                                                                    3/3 
+
+Installed:
+  docker-engine.x86_64 0:18.03.1.ol-0.0.9.el7                                                                               
+
+Dependency Installed:
+  container-selinux.noarch 2:2.21-1.el7                              pigz.x86_64 0:2.3.4-1.el7                             
+
+Complete!
+Created symlink from /etc/systemd/system/multi-user.target.wants/docker.service to /usr/lib/systemd/system/docker.service.
+Setting the devicemapper storage driver ...
+
+*************************************
+Imported temporary env vars from opc to this install session
+*************************************
+Checking that docker is installed and using the correct version
+Found docker version Docker version 18.03.1-ol, build 0d51d18
+WARNING: devicemapper: usage of loopback devices is strongly discouraged for production use.
+         Use `--storage-opt dm.thinpooldev` to specify a custom block storage device.
+WARNING: devicemapper: usage of loopback devices is strongly discouraged for production use.
+         Use `--storage-opt dm.thinpooldev` to specify a custom block storage device.
+
+*************************************
+Checking host prerequisites
+*************************************
+
+Detected linux operating system
+Checking kernel version
+Found kernel version 4.14.35-1818.2.1.el7uek.x86_64
+Checking NFS version
+NFS v4 is required and was not found, please ensure the host has nfs installed, started and configured for NFS v4
+
+=> Primero hay que instalar el NFS server y sus dependencias:
+
+## As root:
+
+yum install nfs-utils nfs4-acl-tools portmap
+
+[root@clicn01 ~]# yum install nfs-utils nfs4-acl-tools portmap
+Loaded plugins: langpacks, ulninfo
+Resolving Dependencies
+--> Running transaction check
+---> Package nfs-utils.x86_64 1:1.3.0-0.54.0.1.el7 will be updated
+---> Package nfs-utils.x86_64 1:1.3.0-0.61.0.1.el7 will be an update
+---> Package nfs4-acl-tools.x86_64 0:0.3.3-19.el7 will be installed
+---> Package rpcbind.x86_64 0:0.2.0-44.el7 will be updated
+---> Package rpcbind.x86_64 0:0.2.0-47.el7 will be an update
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+============================================================================================================================
+ Package                       Arch                  Version                                Repository                 Size
+============================================================================================================================
+Installing:
+ nfs4-acl-tools                x86_64                0.3.3-19.el7                           ol7_latest                 47 k
+Updating:
+ nfs-utils                     x86_64                1:1.3.0-0.61.0.1.el7                   ol7_latest                410 k
+ rpcbind                       x86_64                0.2.0-47.el7                           ol7_latest                 59 k
+
+Transaction Summary
+============================================================================================================================
+Install  1 Package
+Upgrade  2 Packages
+
+Total download size: 516 k
+Is this ok [y/d/N]: y
+Downloading packages:
+No Presto metadata available for ol7_latest
+(1/3): nfs-utils-1.3.0-0.61.0.1.el7.x86_64.rpm                                                       | 410 kB  00:00:00     
+(2/3): nfs4-acl-tools-0.3.3-19.el7.x86_64.rpm                                                        |  47 kB  00:00:00     
+(3/3): rpcbind-0.2.0-47.el7.x86_64.rpm                                                               |  59 kB  00:00:00     
+----------------------------------------------------------------------------------------------------------------------------
+Total                                                                                       4.0 MB/s | 516 kB  00:00:00     
+Running transaction check
+Running transaction test
+Transaction test succeeded
+Running transaction
+  Updating   : rpcbind-0.2.0-47.el7.x86_64                                                                              1/5 
+  Updating   : 1:nfs-utils-1.3.0-0.61.0.1.el7.x86_64                                                                    2/5 
+  Installing : nfs4-acl-tools-0.3.3-19.el7.x86_64                                                                       3/5 
+  Cleanup    : 1:nfs-utils-1.3.0-0.54.0.1.el7.x86_64                                                                    4/5 
+  Cleanup    : rpcbind-0.2.0-44.el7.x86_64                                                                              5/5 
+  Verifying  : rpcbind-0.2.0-47.el7.x86_64                                                                              1/5 
+  Verifying  : 1:nfs-utils-1.3.0-0.61.0.1.el7.x86_64                                                                    2/5 
+  Verifying  : nfs4-acl-tools-0.3.3-19.el7.x86_64                                                                       3/5 
+  Verifying  : 1:nfs-utils-1.3.0-0.54.0.1.el7.x86_64                                                                    4/5 
+  Verifying  : rpcbind-0.2.0-44.el7.x86_64                                                                              5/5 
+
+Installed:
+  nfs4-acl-tools.x86_64 0:0.3.3-19.el7                                                                                      
+
+Updated:
+  nfs-utils.x86_64 1:1.3.0-0.61.0.1.el7                            rpcbind.x86_64 0:0.2.0-47.el7                           
+
+Complete!
+
+
+[root@clicn01 ~]# chkconfig nfs on
+Note: Forwarding request to 'systemctl enable nfs.service'.
+Created symlink from /etc/systemd/system/multi-user.target.wants/nfs-server.service to /usr/lib/systemd/system/nfs-server.service.
+[root@clicn01 ~]# 
+[root@clicn01 ~]# systemctl start nfs.service
+[root@clicn01 ~]# systemctl status nfs.service
+● nfs-server.service - NFS server and services
+   Loaded: loaded (/usr/lib/systemd/system/nfs-server.service; enabled; vendor preset: disabled)
+   Active: active (exited) since lun 2018-11-26 16:40:01 GMT; 6s ago
+  Process: 15180 ExecStartPost=/bin/sh -c if systemctl -q is-active gssproxy; then systemctl restart gssproxy ; fi (code=exited, status=0/SUCCESS)
+  Process: 15166 ExecStart=/usr/sbin/rpc.nfsd $RPCNFSDARGS (code=exited, status=0/SUCCESS)
+  Process: 15164 ExecStartPre=/usr/sbin/exportfs -r (code=exited, status=0/SUCCESS)
+ Main PID: 15166 (code=exited, status=0/SUCCESS)
+    Tasks: 0
+   Memory: 0B
+   CGroup: /system.slice/nfs-server.service
+
+nov 26 16:40:00 clicn01 systemd[1]: Starting NFS server and services...
+nov 26 16:40:01 clicn01 systemd[1]: Started NFS server and services.
+[root@clicn01 ~]# 
+
+
+Luego re-lanzo el install del Storage Gateway:
+**********************************************
+
+sudo ./ocisg-install.sh -a
+
+[opc@clicn01 ocisg-1.1]$ sudo ./ocisg-install.sh -a
+
+*************************************
+Imported temporary env vars from opc to this install session
+*************************************
+Checking that docker is installed and using the correct version
+Found docker version Docker version 18.03.1-ol, build 0d51d18
+WARNING: devicemapper: usage of loopback devices is strongly discouraged for production use.
+         Use `--storage-opt dm.thinpooldev` to specify a custom block storage device.
+WARNING: devicemapper: usage of loopback devices is strongly discouraged for production use.
+         Use `--storage-opt dm.thinpooldev` to specify a custom block storage device.
+
+*************************************
+Checking host prerequisites
+*************************************
+
+Detected linux operating system
+Checking kernel version
+Found kernel version 4.14.35-1818.2.1.el7uek.x86_64
+Checking NFS version
+Found NFS version 4
+
+*************************************
+All prerequisites have been met
+*************************************
+
+
+*************************************
+Begin installation
+*************************************
+
+Enter the install location press enter for default (/opt/ocisg/) : 
+Installing to destination /opt/ocisg/
+Copied install scripts
+Copied OCISG image
+Starting configuration script
+
+Enter the path for OCISG Cache storage : /oradata/ocisg/CACHE    <<<<<<<<<<<<<<<<<<<<<<<<<<< Este directorio lo he creado de antemano !!!
+
+================================================================================
+WARNING:
+Recommended MINIMUM space for Cache is 300 GB. Specified Cache path
+/oradata/ocisg/CACHE (volume /dev/sdb1), has capacity 252GB (232GB free).
+Low Cache space can lead to performance problems and I/O errors.
+================================================================================
+Would you like to proceed anyway ('Y' to proceed, 'N' to stop installation) (y/N) ? y
+
+Enter the path for OCISG Metadata storage : /oradata/ocisg/METADATA  <<<<<<<<<<<<<<<<<<<<<<<<<<< Este directorio lo he creado de antemano !!!
+
+================================================================================
+WARNING:
+Cache and Metadata are on the SAME volume.
+It is recommended to have a SEPARATE volume for Metadata.
+Recommended MINIMUM space for Metadata is 80 GB.
+================================================================================
+Would you like to proceed anyway ('Y' to proceed, 'N' to stop installation) (y/N) ? y
+
+Enter the path for OCISG Log storage : /oradata/ocisg/LOG
+
+================================================================================
+WARNING:
+Cache, Metadata, and Log are on the SAME volume.
+It is recommended to have a SEPARATE volume for Log.
+Recommended MINIMUM space for Log is 20 GB.
+================================================================================
+Would you like to proceed anyway ('Y' to proceed, 'N' to stop installation) (y/N) ? y
+
+Enter the docker network mode (host or bridge). (bridge) 
+You could assign the port to used for NFS and UI or hit <Enter> to automatically select an unused port.
+Enter the host port to use for Administrative Web Interface (dynamic) 
+Enter the host port to use for NFS access (dynamic) 
+Enter the host port to use for optional HTTP REST service (dynamic) 
+Writing configuration
+Importing image
+0a8af4fbe73a: Loading layer [==================================================>]  1.024kB/1.024kB
+fc9b318feb73: Loading layer [==================================================>]  235.2MB/235.2MB
+eed6b55ed364: Loading layer [==================================================>]  1.024kB/1.024kB
+4cf35d460b74: Loading layer [==================================================>]  1.024kB/1.024kB
+6208680f368d: Loading layer [==================================================>]  963.5MB/963.5MB
+cf027cd8d076: Loading layer [==================================================>]  3.072kB/3.072kB
+426d90a4a2d4: Loading layer [==================================================>]  3.072kB/3.072kB
+96412e3ee0de: Loading layer [==================================================>]  1.024kB/1.024kB
+55fdb9473ab7: Loading layer [==================================================>]  1.024kB/1.024kB
+13d703fe0ba5: Loading layer [==================================================>]  1.024kB/1.024kB
+aa6b39308641: Loading layer [==================================================>]  1.024kB/1.024kB
+42f401017467: Loading layer [==================================================>]  1.024kB/1.024kB
+1ccea4ca0569: Loading layer [==================================================>]  1.024kB/1.024kB
+fa8432fd0eac: Loading layer [==================================================>]  1.024kB/1.024kB
+4f07372e94fc: Loading layer [==================================================>]  68.56MB/68.56MB
+739daa7198dc: Loading layer [==================================================>]  230.2MB/230.2MB
+c04ae08cafb3: Loading layer [==================================================>]  5.632kB/5.632kB
+b77d46873da2: Loading layer [==================================================>]  1.024kB/1.024kB
+1408dc895287: Loading layer [==================================================>]  3.584kB/3.584kB
+735b8ec4a14a: Loading layer [==================================================>]  34.49MB/34.49MB
+bfe554bcf49a: Loading layer [==================================================>]  25.14MB/25.14MB
+6bdaf92adef4: Loading layer [==================================================>]  3.903MB/3.903MB
+6d0adf570a19: Loading layer [==================================================>]  102.9kB/102.9kB
+488e00bda5ca: Loading layer [==================================================>]  25.09kB/25.09kB
+6568638392c2: Loading layer [==================================================>]  4.096kB/4.096kB
+468b3dd986a9: Loading layer [==================================================>]  4.096kB/4.096kB
+852a1267b635: Loading layer [==================================================>]   7.68kB/7.68kB
+f7abe8e055bf: Loading layer [==================================================>]   1.67MB/1.67MB
+ad9c3fe754c0: Loading layer [==================================================>]  10.86MB/10.86MB
+215ae666acf8: Loading layer [==================================================>]  2.793MB/2.793MB
+74402ce4321d: Loading layer [==================================================>]  1.168MB/1.168MB
+c88d17cde864: Loading layer [==================================================>]  3.584kB/3.584kB
+c6b16ef66ff3: Loading layer [==================================================>]  1.024kB/1.024kB
+17d6d23291cc: Loading layer [==================================================>]  3.584kB/3.584kB
+ee16d4439276: Loading layer [==================================================>]  1.024kB/1.024kB
+92e706e4723e: Loading layer [==================================================>]  3.584kB/3.584kB
+f4d3e22e87f9: Loading layer [==================================================>]  1.024kB/1.024kB
+8bea6fe68a65: Loading layer [==================================================>]  1.024kB/1.024kB
+f20d9bd752ec: Loading layer [==================================================>]  1.024kB/1.024kB
+d5c90e3b79b3: Loading layer [==================================================>]   2.56kB/2.56kB
+c2f2c34108a1: Loading layer [==================================================>]   7.68kB/7.68kB
+11b8f465ff49: Loading layer [==================================================>]   7.68kB/7.68kB
+50aff53608a9: Loading layer [==================================================>]   7.68kB/7.68kB
+e00ea526455d: Loading layer [==================================================>]   7.68kB/7.68kB
+fadff48e1b5d: Loading layer [==================================================>]  3.584kB/3.584kB
+4afbbd8e95a9: Loading layer [==================================================>]   47.1kB/47.1kB
+84cea8637e20: Loading layer [==================================================>]  3.072kB/3.072kB
+610712dc16bf: Loading layer [==================================================>]  9.728kB/9.728kB
+aaecfa108541: Loading layer [==================================================>]  5.104MB/5.104MB
+cbb8d7629c58: Loading layer [==================================================>]  1.826MB/1.826MB
+e73e0e6e5023: Loading layer [==================================================>]  1.421MB/1.421MB
+00697a5ea870: Loading layer [==================================================>]  3.584kB/3.584kB
+f64b04cb88f6: Loading layer [==================================================>]  3.584kB/3.584kB
+b8f7643809da: Loading layer [==================================================>]  12.29kB/12.29kB
+954bdd270afc: Loading layer [==================================================>]  9.728kB/9.728kB
+fe5406d14488: Loading layer [==================================================>]  9.728kB/9.728kB
+18a037491cf7: Loading layer [==================================================>]  3.584kB/3.584kB
+0223234bd33a: Loading layer [==================================================>]  4.096kB/4.096kB
+509f33e02266: Loading layer [==================================================>]  4.096kB/4.096kB
+844be0b8c816: Loading layer [==================================================>]  4.608kB/4.608kB
+047a61a801e9: Loading layer [==================================================>]  4.608kB/4.608kB
+0e433539f9e8: Loading layer [==================================================>]  4.096kB/4.096kB
+23e9d9d48b5f: Loading layer [==================================================>]  4.608kB/4.608kB
+1a704b38d065: Loading layer [==================================================>]   7.68kB/7.68kB
+dadfc77b6688: Loading layer [==================================================>]  6.656kB/6.656kB
+63f84be5e26b: Loading layer [==================================================>]  6.656kB/6.656kB
+36cab32d62eb: Loading layer [==================================================>]   5.12kB/5.12kB
+095377d2db5e: Loading layer [==================================================>]  3.584kB/3.584kB
+a93204cb16da: Loading layer [==================================================>]  13.31kB/13.31kB
+55627590bf22: Loading layer [==================================================>]  59.97MB/59.97MB
+3dcb92b4d5f4: Loading layer [==================================================>]  83.94MB/83.94MB
+1858b5681203: Loading layer [==================================================>]  2.048kB/2.048kB
+77b8b7c3cf24: Loading layer [==================================================>]  1.024kB/1.024kB
+Creating OCISG Volume with args -v /oradata/ocisg/CACHE:/usr/share/oracle/ -v /oradata/ocisg/METADATA:/usr/share/oracle/system/ -v /oradata/ocisg/LOG:/var/log/gateway 
+Applying configuration file to container
+Starting OCISG [ocisg:1.1]
+Setting up config file port with nfs
+Setting up config file port with admin
+Setting up config file port with rest
+Management Console: https://clicn01:32769
+If you have already configured an OCISG FileSystem via the Management Console,
+you can access the NFS share using the following port.
+
+NFS Port: 32770
+
+Example: mount -t nfs -o vers=4,port=32770 clicn01:/<OCISG FileSystem name> /local_mount_point
+[opc@clicn01 ocisg-1.1]$ 
+
+E. Acceder a la consola de administración:
+******************************************
+
+Antes hay que abrir los puertos 32769 y 32770 en la VCN.
+
+Luego se configura desde la consola de administración: https://clicn01:32769
+
+Ver pantallazos 001 a 008.
+
+
+F. Montar el filesystem en otro compute node:
+*********************************************
+
+La IP privada del nodo clicn01 donde he instalado el Storage Gateway es la: 172.16.1.9
+
+
+stef@stef-TECRA-Z40t-C:/media/Data/home/stef$ ssh -i /media/Data/Preventa/TMP/sshkeybundle/privateKey opc@shard1
+Last login: Tue Nov 20 15:22:18 2018 from 89.128.24.231
+[opc@shard1 ~]$ 
+[opc@shard1 ~]$ 
+[opc@shard1 ~]$ 
+[opc@shard1 ~]$ sudo -i
+[root@shard1 ~]# 
+[root@shard1 ~]# 
+[root@shard1 ~]# mkdir /sg001
+
+mount -t nfs -o vers=4,port=32770 172.16.1.9:/RAWDATA /sg001
+
+[root@shard1 ~]# mount -t nfs -o vers=4,port=32770 172.16.1.9:/RAWDATA /sg001
+[root@shard1 ~]# df -h
+Filesystem           Size  Used Avail Use% Mounted on
+devtmpfs             7,2G     0  7,2G   0% /dev
+tmpfs                7,3G     0  7,3G   0% /dev/shm
+tmpfs                7,3G  8,6M  7,3G   1% /run
+tmpfs                7,3G     0  7,3G   0% /sys/fs/cgroup
+/dev/sda3             39G   11G   29G  27% /
+/dev/sda1            200M  9,8M  191M   5% /boot/efi
+/dev/sdb1            197G   36G  151G  20% /u01
+tmpfs                1,5G     0  1,5G   0% /run/user/1000
+172.16.1.9:/RAWDATA  8,0E     0  8,0E   0% /sg001
+
+[root@shard1 ~]# chown opc:opc /sg001
+
+## As user opc:
+
+cd /
+[opc@shard1 /]$ ls -ltr | grep sg001
+drwxrwxrwx.   1 opc  opc     0 ene  1  1970 sg001
+
+## Intento copiar algo allí:
+
+[opc@shard1 ~]$ cp $HOME/t.txt /sg001
+[opc@shard1 ~]$ 
+[opc@shard1 ~]$ 
+[opc@shard1 ~]$ cd /sg001
+[opc@shard1 sg001]$ ls -ltr
+total 0
+-rw-rw-r--. 1 opc opc 43 nov 27 11:29 t.txt
+[opc@shard1 sg001]$ 
+
+## Ahora hay que ver en el bucket del Object Storage si esta el fichero:
+
+=> OK !!! Ver pantallazo 009
+
+
+G. Copiar un fichero al Oject Storage, y refrescar el Storage Gateway para que vea el nuevo fichero:
+****************************************************************************************************
+
+Hago un upload del fichero "instantclient-basic-linux.x64-18.3.0.0.0dbru.zip" al bucket RAWDATA desde la consola de OCI => pantallazo 010
+
+Desde la consola de administración del Storage Gateway, hago un refresh => pantallazo 011.
+
+Verifico que el nuevo fichero se ve desde el punto de montaje en la maquina shard1:
+
+[opc@shard1 sg001]$ ls -ltr
+total 0
+-rw-rw-r--. 1 opc  opc        43 nov 27 11:29 t.txt
+-rw-r--r--. 1 root root 72794506 nov 27 11:34 instantclient-basic-linux.x64-18.3.0.0.0dbru.zip
+[opc@shard1 sg001]$ 
+
+=> OK !!!
+
+Pruebo copiarlo en local desde el Storage Gateway:
+
+[opc@shard1 ~]$ cp /sg001/instantclient-basic-linux.x64-18.3.0.0.0dbru.zip .
+[opc@shard1 ~]$ ls -ltr
+total 71100
+-rw-------. 1 opc opc     1675 oct 24 15:45 privateKey
+-rw-rw-r--. 1 opc opc       43 nov 27 11:29 t.txt
+-rw-r--r--. 1 opc opc 72794506 nov 27 11:37 instantclient-basic-linux.x64-18.3.0.0.0dbru.zip
+[opc@shard1 ~]$ 
+
+=> OK !!! (va muy bien).
+
+H. BONUS TRACK: hago el mount desde mi Ubuntu, por la IP publica de clicn01
+****************************************************************************
+
+## Primero hay que instalar el modulo NFS client:
+
+sudo apt install nfs-common
+
+stef@stef-TECRA-Z40t-C:/mnt$ cat /etc/hosts | grep clicn01
+130.61.94.192 clicn01
+
+sudo mkdir /mnt/sg001
+sudo chown stef:stef /mnt/sg001
+
+stef@stef-TECRA-Z40t-C:/mnt$ ls -ltr
+total 0
+drwxrwxrwx 1 stef stef 0 nov 27 12:35 sg001
+
+
+sudo mount -t nfs -o vers=4,port=32770 clicn01:/RAWDATA /mnt/sg001
+
+cd /mnt/sg001
+
+stef@stef-TECRA-Z40t-C:/mnt/sg001$ ls -ltr
+total 0
+-rw-rw-r-- 1 stef stef       43 nov 27 12:29 t.txt
+-rw-r--r-- 1 root root 72794506 nov 27 12:34 instantclient-basic-linux.x64-18.3.0.0.0dbru.zip
+stef@stef-TECRA-Z40t-C:/mnt/sg001$ 
+
+=> VEO los ficheros que estan en Object Storage !!!
+
+Ahora voy a copiar un fichero nuevo:
+
+stef@stef-TECRA-Z40t-C:/mnt/sg001$ cp /media/Data/oracle/Distribs/dbtimemonitor13Aug2018.zip /mnt/sg001
+stef@stef-TECRA-Z40t-C:/mnt/sg001$ ls -ltr
+total 0
+-rw-rw-r-- 1 stef stef       43 nov 27 12:29 t.txt
+-rw-r--r-- 1 root root 72794506 nov 27 12:34 instantclient-basic-linux.x64-18.3.0.0.0dbru.zip
+-rw-rw-r-- 1 stef stef 17010627 nov 27 12:47 dbtimemonitor13Aug2018.zip
+stef@stef-TECRA-Z40t-C:/mnt/sg001$ 
+
+=> OK !!!
+=> Se ve el nuevo fichero en el OS bucket => pantallazo 012
+
+Se ve el fichero desde el nodo shard1:
+
+[opc@shard1 ~]$ cd /sg001/
+[opc@shard1 sg001]$ ls -ltr
+total 0
+-rw-rw-r--. 1 opc  opc        43 nov 27 11:29 t.txt
+-rw-r--r--. 1 root root 72794506 nov 27 11:34 instantclient-basic-linux.x64-18.3.0.0.0dbru.zip
+-rw-rw-r--. 1 opc  opc  17010627 nov 27 11:47 dbtimemonitor13Aug2018.zip
+[opc@shard1 sg001]$ 
+
+
+
+
+
+
+

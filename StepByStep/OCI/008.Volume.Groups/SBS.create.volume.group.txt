@@ -1,0 +1,132 @@
+### Crear los dos block volumes:
+
+cat /home/opc/.oci/mydefaults.txt
+[DEFAULT]
+compartment-id=ocid1.compartment.oc1..aaaaaaaaucs4seqk2cp63frwtv6kwaonholmvno532x5b4lwnenzdl3j5z3a
+namespace-name=vecisapoc
+
+
+
+oci bv volume create --display-name MYBV1 --size-in-gbs 50 --wait-for-state AVAILABLE --availability-domain AseY:EU-FRANKFURT-1-AD-1 --defaults-file /home/opc/.oci/mydefaults.txt
+
+Action completed. Waiting until the resource has entered state: AVAILABLE
+{
+  "data": {
+    "availability-domain": "AseY:EU-FRANKFURT-1-AD-1", 
+    "compartment-id": "ocid1.compartment.oc1..aaaaaaaaucs4seqk2cp63frwtv6kwaonholmvno532x5b4lwnenzdl3j5z3a", 
+    "defined-tags": {}, 
+    "display-name": "MYBV1", 
+    "freeform-tags": {}, 
+    "id": "ocid1.volume.oc1.eu-frankfurt-1.abtheljtedxip33kau2ph4el6xsyw25h3saqcup4la5su4rvbj26sxvgzngq", 
+    "is-hydrated": true, 
+    "kms-key-id": null, 
+    "lifecycle-state": "AVAILABLE", 
+    "size-in-gbs": 50, 
+    "size-in-mbs": 51200, 
+    "source-details": null, 
+    "time-created": "2019-01-03T14:29:08.160000+00:00", 
+    "volume-group-id": null
+  }, 
+  "etag": "-1733650871"
+}
+
+oci bv volume create --display-name MYBV2 --size-in-gbs 50 --wait-for-state AVAILABLE --availability-domain AseY:EU-FRANKFURT-1-AD-1 --defaults-file /home/opc/.oci/mydefaults.txt
+Action completed. Waiting until the resource has entered state: AVAILABLE
+{
+  "data": {
+    "availability-domain": "AseY:EU-FRANKFURT-1-AD-1", 
+    "compartment-id": "ocid1.compartment.oc1..aaaaaaaaucs4seqk2cp63frwtv6kwaonholmvno532x5b4lwnenzdl3j5z3a", 
+    "defined-tags": {}, 
+    "display-name": "MYBV2", 
+    "freeform-tags": {}, 
+    "id": "ocid1.volume.oc1.eu-frankfurt-1.abtheljtwqqhlnpqx5h2hoizih7gtciwow5lrnxocdarpvk4swdeaaje27fq", 
+    "is-hydrated": true, 
+    "kms-key-id": null, 
+    "lifecycle-state": "AVAILABLE", 
+    "size-in-gbs": 50, 
+    "size-in-mbs": 51200, 
+    "source-details": null, 
+    "time-created": "2019-01-03T14:30:31.949000+00:00", 
+    "volume-group-id": null
+  }, 
+  "etag": "209798179"
+}
+
+## Creación del Volume group !!!
+
+
+oci bv volume-group list --defaults-file /home/opc/.oci/mydefaults.txt
+
+=> No hay
+
+
+Genero un JSON con los OCIDs de los volumenes:
+
+cat /home/opc/admin/VGTEST.json/VGTEST.json
+
+{"type": "volumeIds", "volumeIds":["ocid1.volume.oc1.eu-frankfurt-1.abtheljtedxip33kau2ph4el6xsyw25h3saqcup4la5su4rvbj26sxvgzngq","ocid1.volume.oc1.eu-frankfurt-1.abtheljtwqqhlnpqx5h2hoizih7gtciwow5lrnxocdarpvk4swdeaaje27fq"]}
+
+
+oci bv volume-group create --display-name MYVG1 --wait-for-state AVAILABLE --availability-domain AseY:EU-FRANKFURT-1-AD-1 --source-details file:///home/opc/admin/VGTEST.json --defaults-file /home/opc/.oci/mydefaults.txt
+
+Action completed. Waiting until the resource has entered state: AVAILABLE
+{
+  "data": {
+    "availability-domain": "AseY:EU-FRANKFURT-1-AD-1", 
+    "compartment-id": "ocid1.compartment.oc1..aaaaaaaaucs4seqk2cp63frwtv6kwaonholmvno532x5b4lwnenzdl3j5z3a", 
+    "defined-tags": {}, 
+    "display-name": "MYVG1", 
+    "freeform-tags": {}, 
+    "id": "ocid1.volumegroup.oc1.eu-frankfurt-1.abtheljthnd5soyn6jhkegog7ylmwwqk74apqhc7fn5w2voxrh47m4lhiwua", 
+    "is-hydrated": null, 
+    "lifecycle-state": "AVAILABLE", 
+    "size-in-gbs": 100, 
+    "size-in-mbs": 102400, 
+    "source-details": {
+      "type": "volumeIds", 
+      "volume-ids": [
+        "ocid1.volume.oc1.eu-frankfurt-1.abtheljtedxip33kau2ph4el6xsyw25h3saqcup4la5su4rvbj26sxvgzngq", 
+        "ocid1.volume.oc1.eu-frankfurt-1.abtheljtwqqhlnpqx5h2hoizih7gtciwow5lrnxocdarpvk4swdeaaje27fq"
+      ]
+    }, 
+    "time-created": "2019-01-03T14:45:14.538000+00:00", 
+    "volume-ids": [
+      "ocid1.volume.oc1.eu-frankfurt-1.abtheljtedxip33kau2ph4el6xsyw25h3saqcup4la5su4rvbj26sxvgzngq", 
+      "ocid1.volume.oc1.eu-frankfurt-1.abtheljtwqqhlnpqx5h2hoizih7gtciwow5lrnxocdarpvk4swdeaaje27fq"
+    ]
+  }, 
+  "etag": "-844379256"
+}
+
+oci bv volume-group list --display-name MYVG1 --defaults-file /home/opc/.oci/mydefaults.txt
+
+{
+  "data": [
+    {
+      "availability-domain": "AseY:EU-FRANKFURT-1-AD-1", 
+      "compartment-id": "ocid1.compartment.oc1..aaaaaaaaucs4seqk2cp63frwtv6kwaonholmvno532x5b4lwnenzdl3j5z3a", 
+      "defined-tags": {}, 
+      "display-name": "MYVG1", 
+      "freeform-tags": {}, 
+      "id": "ocid1.volumegroup.oc1.eu-frankfurt-1.abtheljthnd5soyn6jhkegog7ylmwwqk74apqhc7fn5w2voxrh47m4lhiwua", 
+      "is-hydrated": null, 
+      "lifecycle-state": "AVAILABLE", 
+      "size-in-gbs": 100, 
+      "size-in-mbs": 102400, 
+      "source-details": {
+        "type": "volumeIds", 
+        "volume-ids": [
+          "ocid1.volume.oc1.eu-frankfurt-1.abtheljtedxip33kau2ph4el6xsyw25h3saqcup4la5su4rvbj26sxvgzngq", 
+          "ocid1.volume.oc1.eu-frankfurt-1.abtheljtwqqhlnpqx5h2hoizih7gtciwow5lrnxocdarpvk4swdeaaje27fq"
+        ]
+      }, 
+      "time-created": "2019-01-03T14:45:14.538000+00:00", 
+      "volume-ids": [
+        "ocid1.volume.oc1.eu-frankfurt-1.abtheljtedxip33kau2ph4el6xsyw25h3saqcup4la5su4rvbj26sxvgzngq", 
+        "ocid1.volume.oc1.eu-frankfurt-1.abtheljtwqqhlnpqx5h2hoizih7gtciwow5lrnxocdarpvk4swdeaaje27fq"
+      ]
+    }
+  ]
+}
+
+

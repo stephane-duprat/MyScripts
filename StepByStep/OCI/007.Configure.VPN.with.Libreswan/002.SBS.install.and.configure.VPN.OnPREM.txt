@@ -1,0 +1,515 @@
+A. Instalar libreswan on-premise:
+*********************************
+
+La maquina que actua de on-premise es un OEL7.3 en Ravello.
+IP publica por DHCP: 129.213.79.48
+
+ssh -i /media/Data/Preventa/TMP/sshkeybundle/privateKey oracle@gwipsec
+
+## Install as root !!!
+
+[root@olserver ~]# yum install libreswan
+Loaded plugins: langpacks, ulninfo
+Repodata is over 2 weeks old. Install yum-cron? Or run: yum makecache fast
+ol7_UEKR4                                                             | 1.2 kB  00:00:00     
+ol7_latest                                                            | 1.4 kB  00:00:00     
+(1/5): ol7_UEKR4/x86_64/updateinfo                                    |  81 kB  00:00:00     
+(2/5): ol7_latest/x86_64/group                                        | 659 kB  00:00:00     
+(3/5): ol7_UEKR4/x86_64/primary                                       | 2.5 MB  00:00:00     
+(4/5): ol7_latest/x86_64/updateinfo                                   | 755 kB  00:00:00     
+(5/5): ol7_latest/x86_64/primary                                      |  11 MB  00:00:00     
+ol7_UEKR4                                                                            110/110
+ol7_latest                                                                       11673/11673
+Resolving Dependencies
+--> Running transaction check
+---> Package libreswan.x86_64 0:3.15-8.0.1.el7 will be updated
+---> Package libreswan.x86_64 0:3.25-2.0.1.el7 will be an update
+--> Processing Dependency: unbound-libs >= 1.6.6 for package: libreswan-3.25-2.0.1.el7.x86_64
+--> Running transaction check
+---> Package unbound-libs.x86_64 0:1.4.20-28.el7 will be updated
+---> Package unbound-libs.x86_64 0:1.6.6-1.el7 will be an update
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+=============================================================================================
+ Package                Arch             Version                  Repository            Size
+=============================================================================================
+Updating:
+ libreswan              x86_64           3.25-2.0.1.el7           ol7_latest           1.4 M
+Updating for dependencies:
+ unbound-libs           x86_64           1.6.6-1.el7              ol7_latest           404 k
+
+Transaction Summary
+=============================================================================================
+Upgrade  1 Package (+1 Dependent package)
+
+Total download size: 1.7 M
+Is this ok [y/d/N]: y
+Downloading packages:
+No Presto metadata available for ol7_latest
+(1/2): libreswan-3.25-2.0.1.el7.x86_64.rpm                            | 1.4 MB  00:00:00     
+(2/2): unbound-libs-1.6.6-1.el7.x86_64.rpm                            | 404 kB  00:00:00     
+---------------------------------------------------------------------------------------------
+Total                                                        5.5 MB/s | 1.7 MB  00:00:00     
+Running transaction check
+Running transaction test
+Transaction test succeeded
+Running transaction
+  Updating   : unbound-libs-1.6.6-1.el7.x86_64                                           1/4 
+  Updating   : libreswan-3.25-2.0.1.el7.x86_64                                           2/4 
+  Cleanup    : libreswan-3.15-8.0.1.el7.x86_64                                           3/4 
+  Cleanup    : unbound-libs-1.4.20-28.el7.x86_64                                         4/4 
+  Verifying  : libreswan-3.25-2.0.1.el7.x86_64                                           1/4 
+  Verifying  : unbound-libs-1.6.6-1.el7.x86_64                                           2/4 
+  Verifying  : libreswan-3.15-8.0.1.el7.x86_64                                           3/4 
+  Verifying  : unbound-libs-1.4.20-28.el7.x86_64                                         4/4 
+
+Updated:
+  libreswan.x86_64 0:3.25-2.0.1.el7                                                          
+
+Dependency Updated:
+  unbound-libs.x86_64 0:1.6.6-1.el7                                                          
+
+Complete!
+[root@olserver ~]# 
+
+B. Configurar el Libreswan on-premise:
+**************************************
+
+Primero en la consola de Ravello se abren los puertos 500 y 4500 para el protocolo UDP.
+
+
+[oracle@olserver ~]$ sudo -i
+[root@olserver ~]# cd /etc
+[root@olserver etc]# ls -ltr | grep ipsec
+-rw-------.  1 root root       31 ago 31 03:13 ipsec.secrets
+-rw-r--r--.  1 root root     1073 ago 31 03:13 ipsec.conf
+drwx------.  3 root root       21 nov 29 04:48 ipsec.d
+
+[root@olserver etc]# cat ipsec.conf
+# /etc/ipsec.conf - Libreswan IPsec configuration file
+#
+# see 'man ipsec.conf' and 'man pluto' for more information
+#
+# For example configurations and documentation, see https://libreswan.org/wiki/
+
+config setup
+	# Normally, pluto logs via syslog.
+	#logfile=/var/log/pluto.log
+	#
+	# Do not enable debug options to debug configuration issues!
+	#
+	# plutodebug="control parsing"
+	# plutodebug="all crypt"
+	plutodebug=none
+	#
+	# NAT-TRAVERSAL support
+	# exclude networks used on server side by adding %v4:!a.b.c.0/24
+	# It seems that T-Mobile in the US and Rogers/Fido in Canada are
+	# using 25/8 as "private" address space on their wireless networks.
+	# This range has never been announced via BGP (at least up to 2015)
+	virtual_private=%v4:10.0.0.0/8,%v4:192.168.0.0/16,%v4:172.16.0.0/12,%v4:25.0.0.0/8,%v4:100.64.0.0/10,%v6:fd00::/8,%v6:fe80::/10
+
+# if it exists, include system wide crypto-policy defaults
+# include /etc/crypto-policies/back-ends/libreswan.config
+
+# It is best to add your IPsec connections as separate files in /etc/ipsec.d/
+include /etc/ipsec.d/*.conf
+
+
+[root@olserver etc]# cat ipsec.secrets
+include /etc/ipsec.d/*.secrets
+
+
+Parameters from API or Console
+Get the following parameters from the Oracle Cloud Infrastructure Console or API.
+
+
+Tunnel1: 
+
+IP: 130.61.6.53
+Shared Secret: i1jbtM8PPSxiJLaYu6qG0FF8QEEj7WzCq8t9aNDUdUZgmQEhQj08pKbHliQNcaUv
+
+Tunnel2:
+
+IP: 130.61.7.50
+Shared Secret: bfWk1rDgidTDuoxtZENiQspz48yshaX4YDXM4P1tMVWgn39rSxGFQ7vQ632Zi274
+
+
+CPE Public Address: 130.61.64.213
+
+${VcnCidrBlock}: 172.16.0.0/16
+
+
+
+#### Contenido del fichero /etc/ipsec.d/oci-ipsec.conf: OJO si no hay TAB al principio de las lineas de detalle, NO ARRANCA !!
+
+[root@olserver ipsec.d]# cat oci-ipsec.conf
+conn oracle-tunnel-1
+        type=tunnel
+        authby=secret
+        pfs=yes
+        keyexchange=ike
+        leftid=130.61.64.213
+        leftsourceip=10.0.0.3
+        leftsubnet=10.0.0.0/16
+        right=130.61.6.53
+        rightid=130.61.6.53
+        rightsubnet=172.16.0.0/16
+        aggrmode=no
+        left=10.0.0.3
+        ike=aes128-sha256;modp1536
+        esp=aes128-sha1;modp1536
+        rightnexthop=%defaultroute
+        initial-contact=yes
+        dpddelay=30
+        dpdtimeout=60
+        dpdaction=restart
+        #auto=start OCI working
+        ##auto=start
+
+conn oracle-tunnel-2
+        type=tunnel
+        authby=secret
+        pfs=yes
+        keyexchange=ike
+        leftid=130.61.64.213
+        leftsourceip=10.0.0.3
+        leftsubnet=10.0.0.0/16
+        right=130.61.7.50
+        rightid=130.61.7.50
+        rightsubnet=172.16.0.0/16
+        aggrmode=no
+        left=10.0.0.3
+        ike=aes128-sha256;modp1536
+        esp=aes128-sha1;modp1536
+        rightnexthop=%defaultroute
+        initial-contact=yes
+        dpddelay=30
+        dpdtimeout=60
+        dpdaction=restart
+        #auto=start OCI working
+        ##auto=start
+
+
+Setting Up Your Secrets File: /etc/ipsec.d/oci-ipsec.secrets
+Use the following template for your /etc/ipsec.d/oci-ipsec.secrets file. It contains two
+lines per IPSec connection (one line per tunnel).
+
+
+${cpePublicIpAddress} ${ipAddress1}: PSK "${psk1}"
+${cpePublicIpAddress} ${ipAddress2}: PSK "${psk2}"
+
+[root@olserver ipsec.d]# cat /etc/ipsec.d/oci-ipsec.secrets
+130.61.64.213 130.61.6.53: PSK "i1jbtM8PPSxiJLaYu6qG0FF8QEEj7WzCq8t9aNDUdUZgmQEhQj08pKbHliQNcaUv"
+130.61.64.213 130.61.7.50: PSK "bfWk1rDgidTDuoxtZENiQspz48yshaX4YDXM4P1tMVWgn39rSxGFQ7vQ632Zi274"
+
+
+#### Re-arrancar el servicio de IPSEC:
+
+[root@olserver ipsec.d]# systemctl start ipsec.service
+[root@olserver ipsec.d]# 
+[root@olserver ipsec.d]# 
+[root@olserver ipsec.d]# 
+[root@olserver ipsec.d]# systemctl status ipsec.service
+● ipsec.service - Internet Key Exchange (IKE) Protocol Daemon for IPsec
+   Loaded: loaded (/usr/lib/systemd/system/ipsec.service; disabled; vendor preset: disabled)
+   Active: active (running) since mié 2019-01-16 02:27:53 PST; 12s ago
+     Docs: man:ipsec(8)
+           man:pluto(8)
+           man:ipsec.conf(5)
+  Process: 4099 ExecStartPre=/usr/sbin/ipsec --checknflog (code=exited, status=0/SUCCESS)
+  Process: 4092 ExecStartPre=/usr/sbin/ipsec --checknss (code=exited, status=0/SUCCESS)
+  Process: 3787 ExecStartPre=/usr/libexec/ipsec/_stackmanager start (code=exited, status=0/SUCCESS)
+  Process: 3785 ExecStartPre=/usr/libexec/ipsec/addconn --config /etc/ipsec.conf --checkconfig (code=exited, status=0/SUCCESS)
+ Main PID: 4116 (pluto)
+   Status: "Startup completed."
+   CGroup: /system.slice/ipsec.service
+           └─4116 /usr/libexec/ipsec/pluto --leak-detective --config /etc/ipsec.conf --nof...
+
+ene 16 02:27:51 olserver.localdomain systemd[1]: Starting Internet Key Exchange (IKE) Pr.....
+ene 16 02:27:53 olserver.localdomain ipsec[4099]: nflog ipsec capture disabled
+ene 16 02:27:53 olserver.localdomain pluto[4116]: Jan 16 02:27:53.097590: pluto: warning...y)
+ene 16 02:27:53 olserver.localdomain systemd[1]: Started Internet Key Exchange (IKE) Pro...c.
+Hint: Some lines were ellipsized, use -l to show in full.
+[root@olserver ipsec.d]# 
+
+
+[root@olserver ipsec.d]# ipsec auto --add oracle-tunnel-1
+002 added connection description "oracle-tunnel-1"
+[root@olserver ipsec.d]# ipsec auto --add oracle-tunnel-2
+002 added connection description "oracle-tunnel-2"
+
+
+[root@olserver ipsec.d]# ipsec auto --up oracle-tunnel-1
+002 "oracle-tunnel-1" #1: initiating Main Mode
+104 "oracle-tunnel-1" #1: STATE_MAIN_I1: initiate
+106 "oracle-tunnel-1" #1: STATE_MAIN_I2: sent MI2, expecting MR2
+002 "oracle-tunnel-1" #1: sending INITIAL_CONTACT
+108 "oracle-tunnel-1" #1: STATE_MAIN_I3: sent MI3, expecting MR3
+002 "oracle-tunnel-1" #1: Peer ID is ID_IPV4_ADDR: '130.61.6.53'
+004 "oracle-tunnel-1" #1: STATE_MAIN_I4: ISAKMP SA established {auth=PRESHARED_KEY cipher=aes_128 integ=sha2_256 group=MODP1536}
+002 "oracle-tunnel-1" #2: initiating Quick Mode PSK+ENCRYPT+TUNNEL+PFS+UP+IKEV1_ALLOW+IKEV2_ALLOW+SAREF_TRACK+IKE_FRAG_ALLOW+ESN_NO {using isakmp#1 msgid:4a5f8890 proposal=AES_CBC_128-HMAC_SHA1_96-MODP1536 pfsgroup=MODP1536}
+117 "oracle-tunnel-1" #2: STATE_QUICK_I1: initiate
+003 "oracle-tunnel-1" #2: ignoring informational payload IPSEC_RESPONDER_LIFETIME, msgid=4a5f8890, length=28
+004 "oracle-tunnel-1" #2: STATE_QUICK_I2: sent QI2, IPsec SA established tunnel mode {ESP=>0xbc8dec78 <0xe0189834 xfrm=AES_CBC_128-HMAC_SHA1_96 NATOA=none NATD=none DPD=active}
+
+[root@olserver ipsec.d]# ipsec auto --up oracle-tunnel-2
+002 "oracle-tunnel-2" #3: initiating Main Mode
+104 "oracle-tunnel-2" #3: STATE_MAIN_I1: initiate
+106 "oracle-tunnel-2" #3: STATE_MAIN_I2: sent MI2, expecting MR2
+002 "oracle-tunnel-2" #3: sending INITIAL_CONTACT
+108 "oracle-tunnel-2" #3: STATE_MAIN_I3: sent MI3, expecting MR3
+002 "oracle-tunnel-2" #3: Peer ID is ID_IPV4_ADDR: '130.61.7.50'
+004 "oracle-tunnel-2" #3: STATE_MAIN_I4: ISAKMP SA established {auth=PRESHARED_KEY cipher=aes_128 integ=sha2_256 group=MODP1536}
+002 "oracle-tunnel-2" #4: initiating Quick Mode PSK+ENCRYPT+TUNNEL+PFS+UP+IKEV1_ALLOW+IKEV2_ALLOW+SAREF_TRACK+IKE_FRAG_ALLOW+ESN_NO {using isakmp#3 msgid:eab8e278 proposal=AES_CBC_128-HMAC_SHA1_96-MODP1536 pfsgroup=MODP1536}
+117 "oracle-tunnel-2" #4: STATE_QUICK_I1: initiate
+003 "oracle-tunnel-2" #4: ignoring informational payload IPSEC_RESPONDER_LIFETIME, msgid=eab8e278, length=28
+003 "oracle-tunnel-2" #4: cannot route -- route already in use for "oracle-tunnel-1"
+032 "oracle-tunnel-2" #4: STATE_QUICK_I1: internal error
+
+
+=> Falla porque es una activo-pasivo !!!
+
+[root@olserver ipsec.d]# ipsec auto --start oracle-tunnel-1
+002 "oracle-tunnel-1": deleting non-instance connection
+002 "oracle-tunnel-1" #2: deleting state (STATE_QUICK_I2) and sending notification
+005 "oracle-tunnel-1" #2: ESP traffic information: in=2KB out=2KB
+002 "oracle-tunnel-1" #1: deleting state (STATE_MAIN_I4) and sending notification
+002 added connection description "oracle-tunnel-1"
+002 "oracle-tunnel-1" #5: initiating Main Mode
+104 "oracle-tunnel-1" #5: STATE_MAIN_I1: initiate
+106 "oracle-tunnel-1" #5: STATE_MAIN_I2: sent MI2, expecting MR2
+002 "oracle-tunnel-1" #5: sending INITIAL_CONTACT
+108 "oracle-tunnel-1" #5: STATE_MAIN_I3: sent MI3, expecting MR3
+002 "oracle-tunnel-1" #5: Peer ID is ID_IPV4_ADDR: '130.61.6.53'
+004 "oracle-tunnel-1" #5: STATE_MAIN_I4: ISAKMP SA established {auth=PRESHARED_KEY cipher=aes_128 integ=sha2_256 group=MODP1536}
+002 "oracle-tunnel-1" #6: initiating Quick Mode PSK+ENCRYPT+TUNNEL+PFS+UP+IKEV1_ALLOW+IKEV2_ALLOW+SAREF_TRACK+IKE_FRAG_ALLOW+ESN_NO {using isakmp#5 msgid:e4eccca5 proposal=AES_CBC_128-HMAC_SHA1_96-MODP1536 pfsgroup=MODP1536}
+117 "oracle-tunnel-1" #6: STATE_QUICK_I1: initiate
+003 "oracle-tunnel-1" #6: ignoring informational payload IPSEC_RESPONDER_LIFETIME, msgid=e4eccca5, length=28
+004 "oracle-tunnel-1" #6: STATE_QUICK_I2: sent QI2, IPsec SA established tunnel mode {ESP=>0xd20b79cd <0xc5f594ad xfrm=AES_CBC_128-HMAC_SHA1_96 NATOA=none NATD=none DPD=active}
+
+
+
+[root@olserver ipsec.d]# ipsec status
+000 using kernel interface: netkey
+000 interface lo/lo ::1@500
+000 interface lo/lo 127.0.0.1@4500
+000 interface lo/lo 127.0.0.1@500
+000 interface eth0/eth0 10.0.0.3@4500
+000 interface eth0/eth0 10.0.0.3@500
+000 interface virbr0/virbr0 192.168.122.1@4500
+000 interface virbr0/virbr0 192.168.122.1@500
+000  
+000  
+000 fips mode=disabled;
+000 SElinux=disabled
+000 seccomp=disabled
+000  
+000 config setup options:
+000  
+000 configdir=/etc, configfile=/etc/ipsec.conf, secrets=/etc/ipsec.secrets, ipsecdir=/etc/ipsec.d
+000 nssdir=/etc/ipsec.d, dumpdir=/var/run/pluto/, statsbin=unset
+000 dnssec-rootkey-file=/var/lib/unbound/root.key, dnssec-trusted=<unset>
+000 sbindir=/usr/sbin, libexecdir=/usr/libexec/ipsec
+000 pluto_version=3.25, pluto_vendorid=OE-Libreswan-3.25
+000 nhelpers=-1, uniqueids=yes, dnssec-enable=yes, perpeerlog=no, logappend=yes, logip=yes, shuntlifetime=900s, xfrmlifetime=300s
+000 ddos-cookies-threshold=50000, ddos-max-halfopen=25000, ddos-mode=auto
+000 ikeport=500, ikebuf=0, msg_errqueue=yes, strictcrlpolicy=no, crlcheckinterval=0, listen=<any>, nflog-all=0
+000 ocsp-enable=no, ocsp-strict=no, ocsp-timeout=2, ocsp-uri=<unset>
+000 ocsp-trust-name=<unset>
+000 ocsp-cache-size=1000, ocsp-cache-min-age=3600, ocsp-cache-max-age=86400, ocsp-method=get
+000 secctx-attr-type=32001
+000 debug:
+000  
+000 nat-traversal=yes, keep-alive=20, nat-ikeport=4500
+000 virtual-private (%priv):
+000 - allowed subnets: 10.0.0.0/8, 192.168.0.0/16, 172.16.0.0/12, 25.0.0.0/8, 100.64.0.0/10, fd00::/8, fe80::/10
+000  
+000 ESP algorithms supported:
+000  
+000 algorithm ESP encrypt: id=3, name=ESP_3DES, ivlen=8, keysizemin=192, keysizemax=192
+000 algorithm ESP encrypt: id=6, name=ESP_CAST, ivlen=8, keysizemin=128, keysizemax=128
+000 algorithm ESP encrypt: id=11, name=ESP_NULL, ivlen=0, keysizemin=0, keysizemax=0
+000 algorithm ESP encrypt: id=12, name=ESP_AES, ivlen=8, keysizemin=128, keysizemax=256
+000 algorithm ESP encrypt: id=13, name=ESP_AES_CTR, ivlen=8, keysizemin=128, keysizemax=256
+000 algorithm ESP encrypt: id=14, name=ESP_AES_CCM_A, ivlen=8, keysizemin=128, keysizemax=256
+000 algorithm ESP encrypt: id=15, name=ESP_AES_CCM_B, ivlen=8, keysizemin=128, keysizemax=256
+000 algorithm ESP encrypt: id=16, name=ESP_AES_CCM_C, ivlen=8, keysizemin=128, keysizemax=256
+000 algorithm ESP encrypt: id=18, name=ESP_AES_GCM_A, ivlen=8, keysizemin=128, keysizemax=256
+000 algorithm ESP encrypt: id=19, name=ESP_AES_GCM_B, ivlen=8, keysizemin=128, keysizemax=256
+000 algorithm ESP encrypt: id=20, name=ESP_AES_GCM_C, ivlen=8, keysizemin=128, keysizemax=256
+000 algorithm ESP encrypt: id=22, name=ESP_CAMELLIA, ivlen=8, keysizemin=128, keysizemax=256
+000 algorithm ESP encrypt: id=23, name=ESP_NULL_AUTH_AES_GMAC, ivlen=8, keysizemin=128, keysizemax=256
+000 algorithm ESP encrypt: id=252, name=ESP_SERPENT, ivlen=8, keysizemin=128, keysizemax=256
+000 algorithm ESP encrypt: id=253, name=ESP_TWOFISH, ivlen=8, keysizemin=128, keysizemax=256
+000 algorithm AH/ESP auth: id=1, name=AUTH_ALGORITHM_HMAC_MD5, keysizemin=128, keysizemax=128
+000 algorithm AH/ESP auth: id=2, name=AUTH_ALGORITHM_HMAC_SHA1, keysizemin=160, keysizemax=160
+000 algorithm AH/ESP auth: id=5, name=AUTH_ALGORITHM_HMAC_SHA2_256, keysizemin=256, keysizemax=256
+000 algorithm AH/ESP auth: id=6, name=AUTH_ALGORITHM_HMAC_SHA2_384, keysizemin=384, keysizemax=384
+000 algorithm AH/ESP auth: id=7, name=AUTH_ALGORITHM_HMAC_SHA2_512, keysizemin=512, keysizemax=512
+000 algorithm AH/ESP auth: id=8, name=AUTH_ALGORITHM_HMAC_RIPEMD, keysizemin=160, keysizemax=160
+000 algorithm AH/ESP auth: id=9, name=AUTH_ALGORITHM_AES_XCBC, keysizemin=128, keysizemax=128
+000 algorithm AH/ESP auth: id=250, name=AUTH_ALGORITHM_AES_CMAC_96, keysizemin=128, keysizemax=128
+000 algorithm AH/ESP auth: id=251, name=AUTH_ALGORITHM_NULL_KAME, keysizemin=0, keysizemax=0
+000  
+000 IKE algorithms supported:
+000  
+000 algorithm IKE encrypt: v1id=5, v1name=OAKLEY_3DES_CBC, v2id=3, v2name=3DES, blocksize=8, keydeflen=192
+000 algorithm IKE encrypt: v1id=8, v1name=OAKLEY_CAMELLIA_CBC, v2id=23, v2name=CAMELLIA_CBC, blocksize=16, keydeflen=128
+000 algorithm IKE encrypt: v1id=-1, v1name=n/a, v2id=20, v2name=AES_GCM_C, blocksize=16, keydeflen=128
+000 algorithm IKE encrypt: v1id=-1, v1name=n/a, v2id=19, v2name=AES_GCM_B, blocksize=16, keydeflen=128
+000 algorithm IKE encrypt: v1id=-1, v1name=n/a, v2id=18, v2name=AES_GCM_A, blocksize=16, keydeflen=128
+000 algorithm IKE encrypt: v1id=13, v1name=OAKLEY_AES_CTR, v2id=13, v2name=AES_CTR, blocksize=16, keydeflen=128
+000 algorithm IKE encrypt: v1id=7, v1name=OAKLEY_AES_CBC, v2id=12, v2name=AES_CBC, blocksize=16, keydeflen=128
+000 algorithm IKE encrypt: v1id=65004, v1name=OAKLEY_SERPENT_CBC, v2id=65004, v2name=SERPENT_CBC, blocksize=16, keydeflen=128
+000 algorithm IKE encrypt: v1id=65005, v1name=OAKLEY_TWOFISH_CBC, v2id=65005, v2name=TWOFISH_CBC, blocksize=16, keydeflen=128
+000 algorithm IKE encrypt: v1id=65289, v1name=OAKLEY_TWOFISH_CBC_SSH, v2id=65289, v2name=TWOFISH_CBC_SSH, blocksize=16, keydeflen=128
+000 algorithm IKE PRF: name=HMAC_MD5, hashlen=16
+000 algorithm IKE PRF: name=HMAC_SHA1, hashlen=20
+000 algorithm IKE PRF: name=HMAC_SHA2_256, hashlen=32
+000 algorithm IKE PRF: name=HMAC_SHA2_384, hashlen=48
+000 algorithm IKE PRF: name=HMAC_SHA2_512, hashlen=64
+000 algorithm IKE PRF: name=AES_XCBC, hashlen=16
+000 algorithm IKE DH Key Exchange: name=MODP1024, bits=1024
+000 algorithm IKE DH Key Exchange: name=MODP1536, bits=1536
+000 algorithm IKE DH Key Exchange: name=MODP2048, bits=2048
+000 algorithm IKE DH Key Exchange: name=MODP3072, bits=3072
+000 algorithm IKE DH Key Exchange: name=MODP4096, bits=4096
+000 algorithm IKE DH Key Exchange: name=MODP6144, bits=6144
+000 algorithm IKE DH Key Exchange: name=MODP8192, bits=8192
+000 algorithm IKE DH Key Exchange: name=DH19, bits=512
+000 algorithm IKE DH Key Exchange: name=DH20, bits=768
+000 algorithm IKE DH Key Exchange: name=DH21, bits=1056
+000 algorithm IKE DH Key Exchange: name=DH22, bits=1024
+000 algorithm IKE DH Key Exchange: name=DH23, bits=2048
+000 algorithm IKE DH Key Exchange: name=DH24, bits=2048
+000  
+000 stats db_ops: {curr_cnt, total_cnt, maxsz} :context={0,4,64} trans={0,4,6936} attrs={0,4,4624} 
+000  
+000 Connection list:
+000  
+000 "oracle-tunnel-1": 10.0.0.0/16===10.0.0.3<10.0.0.3>[130.61.64.213]...130.61.6.53<130.61.6.53>===172.16.0.0/16; erouted; eroute owner: #2
+000 "oracle-tunnel-1":     oriented; my_ip=10.0.0.3; their_ip=unset; my_updown=ipsec _updown;
+000 "oracle-tunnel-1":   xauth us:none, xauth them:none,  my_username=[any]; their_username=[any]
+000 "oracle-tunnel-1":   our auth:secret, their auth:secret
+000 "oracle-tunnel-1":   modecfg info: us:none, them:none, modecfg policy:push, dns:unset, domains:unset, banner:unset, cat:unset;
+000 "oracle-tunnel-1":   labeled_ipsec:no;
+000 "oracle-tunnel-1":   policy_label:unset;
+000 "oracle-tunnel-1":   ike_life: 3600s; ipsec_life: 28800s; replay_window: 32; rekey_margin: 540s; rekey_fuzz: 100%; keyingtries: 0;
+000 "oracle-tunnel-1":   retransmit-interval: 500ms; retransmit-timeout: 60s;
+000 "oracle-tunnel-1":   initial-contact:yes; cisco-unity:no; fake-strongswan:no; send-vendorid:no; send-no-esp-tfc:no;
+000 "oracle-tunnel-1":   policy: PSK+ENCRYPT+TUNNEL+PFS+UP+IKEV1_ALLOW+IKEV2_ALLOW+SAREF_TRACK+IKE_FRAG_ALLOW+ESN_NO;
+000 "oracle-tunnel-1":   conn_prio: 16,16; interface: eth0; metric: 0; mtu: unset; sa_prio:auto; sa_tfc:none;
+000 "oracle-tunnel-1":   nflog-group: unset; mark: unset; vti-iface:unset; vti-routing:no; vti-shared:no; nic-offload:auto;
+000 "oracle-tunnel-1":   our idtype: ID_IPV4_ADDR; our id=130.61.64.213; their idtype: ID_IPV4_ADDR; their id=130.61.6.53
+000 "oracle-tunnel-1":   dpd: action:restart; delay:30; timeout:60; nat-t: encaps:auto; nat_keepalive:yes; ikev1_natt:both
+000 "oracle-tunnel-1":   newest ISAKMP SA: #1; newest IPsec SA: #2;
+000 "oracle-tunnel-1":   IKE algorithms: AES_CBC_128-HMAC_SHA2_256-MODP1536
+000 "oracle-tunnel-1":   IKE algorithm newest: AES_CBC_128-HMAC_SHA2_256-MODP1536
+000 "oracle-tunnel-1":   ESP algorithms: AES_CBC_128-HMAC_SHA1_96-MODP1536
+000 "oracle-tunnel-1":   ESP algorithm newest: AES_CBC_128-HMAC_SHA1_96; pfsgroup=MODP1536
+000 "oracle-tunnel-2": 10.0.0.0/16===10.0.0.3<10.0.0.3>[130.61.64.213]...130.61.7.50<130.61.7.50>===172.16.0.0/16; unrouted; eroute owner: #0
+000 "oracle-tunnel-2":     oriented; my_ip=10.0.0.3; their_ip=unset; my_updown=ipsec _updown;
+000 "oracle-tunnel-2":   xauth us:none, xauth them:none,  my_username=[any]; their_username=[any]
+000 "oracle-tunnel-2":   our auth:secret, their auth:secret
+000 "oracle-tunnel-2":   modecfg info: us:none, them:none, modecfg policy:push, dns:unset, domains:unset, banner:unset, cat:unset;
+000 "oracle-tunnel-2":   labeled_ipsec:no;
+000 "oracle-tunnel-2":   policy_label:unset;
+000 "oracle-tunnel-2":   ike_life: 3600s; ipsec_life: 28800s; replay_window: 32; rekey_margin: 540s; rekey_fuzz: 100%; keyingtries: 0;
+000 "oracle-tunnel-2":   retransmit-interval: 500ms; retransmit-timeout: 60s;
+000 "oracle-tunnel-2":   initial-contact:yes; cisco-unity:no; fake-strongswan:no; send-vendorid:no; send-no-esp-tfc:no;
+000 "oracle-tunnel-2":   policy: PSK+ENCRYPT+TUNNEL+PFS+UP+IKEV1_ALLOW+IKEV2_ALLOW+SAREF_TRACK+IKE_FRAG_ALLOW+ESN_NO;
+000 "oracle-tunnel-2":   conn_prio: 16,16; interface: eth0; metric: 0; mtu: unset; sa_prio:auto; sa_tfc:none;
+000 "oracle-tunnel-2":   nflog-group: unset; mark: unset; vti-iface:unset; vti-routing:no; vti-shared:no; nic-offload:auto;
+000 "oracle-tunnel-2":   our idtype: ID_IPV4_ADDR; our id=130.61.64.213; their idtype: ID_IPV4_ADDR; their id=130.61.7.50
+000 "oracle-tunnel-2":   dpd: action:restart; delay:30; timeout:60; nat-t: encaps:auto; nat_keepalive:yes; ikev1_natt:both
+000 "oracle-tunnel-2":   newest ISAKMP SA: #3; newest IPsec SA: #0;
+000 "oracle-tunnel-2":   IKE algorithms: AES_CBC_128-HMAC_SHA2_256-MODP1536
+000 "oracle-tunnel-2":   IKE algorithm newest: AES_CBC_128-HMAC_SHA2_256-MODP1536
+000 "oracle-tunnel-2":   ESP algorithms: AES_CBC_128-HMAC_SHA1_96-MODP1536
+000  
+000 Total IPsec connections: loaded 2, active 1
+000  
+000 State Information: DDoS cookies not required, Accepting new IKE connections
+000 IKE SAs: total(2), half-open(0), open(0), authenticated(2), anonymous(0)
+000 IPsec SAs: total(2), authenticated(2), anonymous(0)
+000  
+000 #1: "oracle-tunnel-1":500 STATE_MAIN_I4 (ISAKMP SA established); EVENT_SA_REPLACE in 2519s; newest ISAKMP; lastdpd=3s(seq in:0 out:0); idle; import:admin initiate
+000 #2: "oracle-tunnel-1":500 STATE_QUICK_I2 (sent QI2, IPsec SA established); EVENT_SA_REPLACE in 27960s; newest IPSEC; eroute owner; isakmp#1; idle; import:admin initiate
+000 #2: "oracle-tunnel-1" esp.bc8dec78@130.61.6.53 esp.e0189834@10.0.0.3 tun.0@130.61.6.53 tun.0@10.0.0.3 ref=0 refhim=0 Traffic: ESPin=0B ESPout=0B! ESPmax=4194303B 
+000 #3: "oracle-tunnel-2":500 STATE_MAIN_I4 (ISAKMP SA established); EVENT_SA_REPLACE in 2587s; newest ISAKMP; lastdpd=20s(seq in:2537 out:0); idle; import:admin initiate
+000 #4: "oracle-tunnel-2":500 STATE_QUICK_I1 (sent QI1, expecting QR1); EVENT_CRYPTO_TIMEOUT in 9s; lastdpd=-1s(seq in:0 out:0); idle; import:admin initiate
+000  
+000 Bare Shunt list:
+000  
+[root@olserver ipsec.d]# 
+
+
+Ahora en la consola de OCI uno de los dos tuneles tiene que estar UP y en verde !!!
+
+Pantallazo: 014.Tunel1.UP.Screenshot from 2019-01-16 11-34-05.png
+
+
+[root@olserver ipsec.d]# route -n
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+0.0.0.0         10.0.0.2        0.0.0.0         UG    0      0        0 eth0
+10.0.0.0        0.0.0.0         255.255.0.0     U     0      0        0 eth0
+169.254.0.0     0.0.0.0         255.255.0.0     U     1003   0        0 eth0
+172.16.0.0      0.0.0.0         255.255.0.0     U     0      0        0 eth0
+192.168.122.0   0.0.0.0         255.255.255.0   U     0      0        0 virbr0
+[root@olserver ipsec.d]# 
+
+
+Prueba de bondad:
+*****************
+
+Hacemos un ping a la maquina OCI:
+
+
+[root@olserver ipsec.d]# ping 172.16.1.2
+PING 172.16.1.2 (172.16.1.2) 56(84) bytes of data.
+64 bytes from 172.16.1.2: icmp_seq=5 ttl=63 time=0.951 ms
+64 bytes from 172.16.1.2: icmp_seq=6 ttl=63 time=0.840 ms
+64 bytes from 172.16.1.2: icmp_seq=7 ttl=63 time=0.981 ms
+64 bytes from 172.16.1.2: icmp_seq=8 ttl=63 time=0.901 ms
+64 bytes from 172.16.1.2: icmp_seq=9 ttl=63 time=0.797 ms
+64 bytes from 172.16.1.2: icmp_seq=10 ttl=63 time=0.834 ms
+64 bytes from 172.16.1.2: icmp_seq=11 ttl=63 time=1.14 ms
+64 bytes from 172.16.1.2: icmp_seq=12 ttl=63 time=0.806 ms
+64 bytes from 172.16.1.2: icmp_seq=13 ttl=63 time=0.836 ms
+64 bytes from 172.16.1.2: icmp_seq=14 ttl=63 time=0.819 ms
+64 bytes from 172.16.1.2: icmp_seq=15 ttl=63 time=0.959 ms
+64 bytes from 172.16.1.2: icmp_seq=16 ttl=63 time=0.854 ms
+64 bytes from 172.16.1.2: icmp_seq=17 ttl=63 time=0.703 ms
+
+Probamos el ping "al reves", desde OCI al on-premise !!!
+
+[oracle@olserver ~]$ ssh -i /tmp/privateKey opc@172.16.1.2
+The authenticity of host '172.16.1.2 (172.16.1.2)' can't be established.
+ECDSA key fingerprint is e2:21:f0:e5:9b:af:d1:5e:43:97:82:6a:aa:ed:65:bf.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added '172.16.1.2' (ECDSA) to the list of known hosts.
+[opc@cn01 ~]$ ping 10.0.0.3
+PING 10.0.0.3 (10.0.0.3) 56(84) bytes of data.
+64 bytes from 10.0.0.3: icmp_seq=1 ttl=63 time=0.696 ms
+64 bytes from 10.0.0.3: icmp_seq=2 ttl=63 time=0.828 ms
+64 bytes from 10.0.0.3: icmp_seq=3 ttl=63 time=0.902 ms
+^C
+--- 10.0.0.3 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2035ms
+rtt min/avg/max/mdev = 0.696/0.808/0.902/0.091 ms
+[opc@cn01 ~]$ 
+
+
+
+
+
+
+
+
+
+
+

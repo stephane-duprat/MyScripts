@@ -1,0 +1,159 @@
+NB: si se sigue la nota "https://docs.cloud.oracle.com/iaas/Content/StorageGateway/Tasks/installingstoragegateway.htm"
+
+Dice que tenemos que arrancar el docker engine con storage-driver=devicemapper, modificando el JSON:
+
+cat /etc/docker/daemon.json
+osgbilp01:#/etc/docker# cat daemon.json
+{
+"storage-driver": "devicemapper"
+}
+osgbilp01:#/etc/docker#
+
+Si hacemos esto, el docker engine no arranca, porque tiene directivas de storage incompatibles en los ficheros:
+
+
+
+osgbilp01:#/etc/sysconfig# cat docker-storage-setup
+STORAGE_DRIVER=overlay2
+osgbilp01:#/etc/sysconfig# cat docker-storage
+DOCKER_STORAGE_OPTIONS="--storage-driver overlay2 "
+
+Estos flags son imcompatibles con el JSON anterior.
+
+Lo que hay que hacer es moficiar los flags:
+
+osgbilp01:#/etc/sysconfig# cat docker-storage-setup
+STORAGE_DRIVER=devicemapper
+
+osgbilp01:#/etc/sysconfig# cat docker-storage
+DOCKER_STORAGE_OPTIONS="--storage-driver devicemapper"
+
+Y luego borrar el JSON /etc/docker/daemon.json para que en el arranque del docker engine SOLO coja los flags:
+
+osgbilp01:#/etc/docker# systemctl start docker
+osgbilp01:#/etc/docker# systemctl status docker
+● docker.service - Docker Application Container Engine
+   Loaded: loaded (/usr/lib/systemd/system/docker.service; disabled; vendor preset: disabled)
+   Active: active (running) since Thu 2019-07-18 09:25:12 CEST; 6s ago
+     Docs: http://docs.docker.com
+ Main PID: 21690 (dockerd-current)
+   CGroup: /system.slice/docker.service
+           ├─21690 /usr/bin/dockerd-current --add-runtime docker-runc=/usr/libexec/docker/docker-runc-current --default-runtime=docker...
+           └─21701 /usr/bin/docker-containerd-current -l unix:///var/run/docker/libcontainerd/docker-containerd.sock --metrics-interva...
+
+Jul 18 09:25:12 osgbilp01 dockerd-current[21690]: time="2019-07-18T09:25:12.563611150+02:00" level=warning msg="devmapper: Base ...ored."
+Jul 18 09:25:12 osgbilp01 dockerd-current[21690]: time="2019-07-18T09:25:12.591938546+02:00" level=info msg="Graph migration to ...conds"
+Jul 18 09:25:12 osgbilp01 dockerd-current[21690]: time="2019-07-18T09:25:12.593129939+02:00" level=info msg="Loading containers: start."
+Jul 18 09:25:12 osgbilp01 dockerd-current[21690]: time="2019-07-18T09:25:12.606300608+02:00" level=info msg="Firewalld running: false"
+Jul 18 09:25:12 osgbilp01 dockerd-current[21690]: time="2019-07-18T09:25:12.725985768+02:00" level=info msg="Default bridge (doc...dress"
+Jul 18 09:25:12 osgbilp01 dockerd-current[21690]: time="2019-07-18T09:25:12.770500957+02:00" level=info msg="Loading containers: done."
+Jul 18 09:25:12 osgbilp01 dockerd-current[21690]: time="2019-07-18T09:25:12.788463931+02:00" level=info msg="Daemon has complete...ation"
+Jul 18 09:25:12 osgbilp01 dockerd-current[21690]: time="2019-07-18T09:25:12.788530423+02:00" level=info msg="Docker daemon" comm...1.13.1
+Jul 18 09:25:12 osgbilp01 dockerd-current[21690]: time="2019-07-18T09:25:12.799529137+02:00" level=info msg="API listen on /var/....sock"
+Jul 18 09:25:12 osgbilp01 systemd[1]: Started Docker Application Container Engine.
+Hint: Some lines were ellipsized, use -l to show in full.
+osgbilp01:#/etc/docker# docker info
+Containers: 0
+ Running: 0
+ Paused: 0
+ Stopped: 0
+Images: 0
+Server Version: 1.13.1
+Storage Driver: devicemapper
+ Pool Name: docker-253:7-2117877-pool
+ Pool Blocksize: 65.54 kB
+ Base Device Size: 10.74 GB
+ Backing Filesystem: xfs
+ Data file: /dev/loop0
+ Metadata file: /dev/loop1
+ Data Space Used: 11.73 MB
+ Data Space Total: 107.4 GB
+ Data Space Available: 2.842 GB
+ Metadata Space Used: 17.36 MB
+ Metadata Space Total: 2.147 GB
+ Metadata Space Available: 2.13 GB
+ Thin Pool Minimum Free Space: 10.74 GB
+ Udev Sync Supported: true
+ Deferred Removal Enabled: true
+ Deferred Deletion Enabled: true
+ Deferred Deleted Device Count: 0
+ Data loop file: /var/lib/docker/devicemapper/devicemapper/data
+ WARNING: Usage of loopback devices is strongly discouraged for production use. Use `--storage-opt dm.thinpooldev` to specify a custom block storage device.
+ Metadata loop file: /var/lib/docker/devicemapper/devicemapper/metadata
+ Library Version: 1.02.149-RHEL7 (2018-07-20)
+Logging Driver: journald
+Cgroup Driver: systemd
+Plugins:
+ Volume: local
+ Network: bridge host macvlan null overlay
+ Authorization: rhel-push-plugin
+Swarm: inactive
+Runtimes: docker-runc runc
+Default Runtime: docker-runc
+Init Binary: /usr/libexec/docker/docker-init-current
+containerd version:  (expected: aa8187dbd3b7ad67d8e5e3a15115d3eef43a7ed1)
+runc version: 9c3c5f853ebf0ffac0d087e94daef462133b69c7 (expected: 9df8b306d01f59d3a8029be411de015b7304dd8f)
+init version: fec3683b971d9c3ef73f284f176672c44b448662 (expected: 949e6facb77383876aeff8a6944dde66b3089574)
+Security Options:
+ seccomp
+  WARNING: You're not using the default seccomp profile
+  Profile: /etc/docker/seccomp.json
+ selinux
+Kernel Version: 3.10.0-957.5.1.el7.x86_64
+Operating System: Red Hat Enterprise Linux Server 7.6 (Maipo)
+OSType: linux
+Architecture: x86_64
+Number of Docker Hooks: 3
+CPUs: 8
+Total Memory: 31.26 GiB
+Name: osgbilp01
+ID: FI6W:V7WT:6XHB:MA4I:NGGY:WMUI:COEL:4YRX:KTNB:2LID:U5YY:LMGE
+Docker Root Dir: /var/lib/docker
+Debug Mode (client): false
+Debug Mode (server): false
+Registry: https://registry.access.redhat.com/v1/
+Experimental: false
+Insecure Registries:
+ 127.0.0.0/8
+Live Restore Enabled: false
+Registries: registry.access.redhat.com (secure), docker.io (secure)
+
+osgbilp01:#/etc/sysconfig# docker info | grep "Storage Driver"
+Storage Driver: devicemapper
+ WARNING: Usage of loopback devices is strongly discouraged for production use. Use `--storage-opt dm.thinpooldev` to specify a custom block storage device.
+  WARNING: You're not using the default seccomp profile
+
+osgbilp01:#/ocisg/sw/ocisg-1.2.1# ./ocisg-install.sh -a
+Checking that docker is installed and using the correct version
+Found docker version Docker version 1.13.1, build b2f74b2/1.13.1
+ WARNING: Usage of loopback devices is strongly discouraged for production use. Use `--storage-opt dm.thinpooldev` to specify a custom block storage device.
+  WARNING: You're not using the default seccomp profile
+ WARNING: Usage of loopback devices is strongly discouraged for production use. Use `--storage-opt dm.thinpooldev` to specify a custom block storage device.
+  WARNING: You're not using the default seccomp profile
+
+*************************************
+Checking host prerequisites
+*************************************
+
+Detected linux operating system
+Checking kernel version
+Found kernel version 3.10.0-957.5.1.el7.x86_64
+Checking NFS version
+Found NFS version 4
+
+*************************************
+All prerequisites have been met
+*************************************
+
+
+*************************************
+Begin installation
+*************************************
+
+Enter the install location press enter for default (/opt/ocisg/) :
+
+
+
+
+
+
