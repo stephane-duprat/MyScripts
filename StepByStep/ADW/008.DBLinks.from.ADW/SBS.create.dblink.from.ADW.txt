@@ -1,0 +1,743 @@
+Desde BENCHADW, acceder a BENCHSI a través de DBlink:
+*****************************************************
+
+Ahora empieza la fiesta, descrita en "https://blogs.oracle.com/datawarehousing/how-to-create-a-database-link-from-an-autonomous-data-warehouse-to-a-database-cloud-service-instance-v2":
+Hay muchas imprecisiones en este BLOG, pero si se siguen los pasos descritos a continuación, acaba funcionando:
+
+f1. Enable TCPS Authentication in DBCS:
+***************************************
+
+En DBCS no esta configurado TCPS, por defecto va todo por TCP, puerto 1521 del LISTENER.
+
+Create wallets with self signed certificates for server and client:
+*******************************************************************
+
+Set up wallet directories with the root user
+--------------------------------------------
+
+mkdir -p /u01/server/wallet
+mkdir -p /u01/client/wallet
+mkdir /u01/certificate
+chown -R oracle:oinstall /u01/server
+chown -R oracle:oinstall /u01/client
+chown -R oracle:oinstall /u01/certificate
+
+Create a server wallet with the oracle user
+-------------------------------------------
+
+cd /u01/server/wallet/
+orapki wallet create -wallet ./ -pwd Oracle123456 -auto_login
+
+Oracle PKI Tool Release 18.0.0.0.0 - Production
+Version 18.1.0.0.0
+Copyright (c) 2004, 2017, Oracle and/or its affiliates. All rights reserved.
+
+Operation is successfully completed.
+
+[oracle@dbcn01 wallet]$ ls -ltr
+total 8
+-rw------- 1 oracle oinstall    0 Aug 23 10:00 ewallet.p12.lck
+-rw------- 1 oracle oinstall    0 Aug 23 10:00 cwallet.sso.lck
+-rw------- 1 oracle oinstall 2392 Aug 23 10:01 ewallet.p12
+-rw------- 1 oracle oinstall 2437 Aug 23 10:01 cwallet.sso
+
+
+Create a server certificate with the oracle user
+------------------------------------------------
+
+orapki wallet add -wallet ./ -pwd Oracle123456 -dn "CN=dbcs" -keysize 1024 -self_signed -validity 3650 -sign_alg sha256
+
+Oracle PKI Tool Release 18.0.0.0.0 - Production
+Version 18.1.0.0.0
+Copyright (c) 2004, 2017, Oracle and/or its affiliates. All rights reserved.
+
+Operation is successfully completed.
+
+Create a client wallet with the oracle user
+-------------------------------------------
+	
+cd /u01/client/wallet/
+orapki wallet create -wallet ./ -pwd Oracle123456 -auto_login
+
+Oracle PKI Tool Release 18.0.0.0.0 - Production
+Version 18.1.0.0.0
+Copyright (c) 2004, 2017, Oracle and/or its affiliates. All rights reserved.
+
+Operation is successfully completed.
+[oracle@dbcn01 wallet]$ ls -ltr
+total 8
+-rw------- 1 oracle oinstall   0 Aug 23 10:04 ewallet.p12.lck
+-rw------- 1 oracle oinstall 149 Aug 23 10:04 ewallet.p12
+-rw------- 1 oracle oinstall   0 Aug 23 10:04 cwallet.sso.lck
+-rw------- 1 oracle oinstall 194 Aug 23 10:04 cwallet.sso
+
+Create a client certificate with the oracle user
+------------------------------------------------
+
+orapki wallet add -wallet ./ -pwd Oracle123456 -dn "CN=ctuzla-mac" -keysize 1024 -self_signed -validity 3650 -sign_alg sha256
+
+Oracle PKI Tool Release 18.0.0.0.0 - Production
+Version 18.1.0.0.0
+Copyright (c) 2004, 2017, Oracle and/or its affiliates. All rights reserved.
+
+Operation is successfully completed.
+
+Exchange certificates between server and client wallets (Export/import certificates)
+************************************************************************************
+
+Export the server certificate with the oracle user
+--------------------------------------------------
+
+cd /u01/server/wallet/
+orapki wallet export -wallet ./ -pwd Oracle123456 -dn "CN=dbcs" -cert /tmp/server.crt
+
+Oracle PKI Tool Release 18.0.0.0.0 - Production
+Version 18.1.0.0.0
+Copyright (c) 2004, 2017, Oracle and/or its affiliates. All rights reserved.
+
+Operation is successfully completed.
+[oracle@dbcn01 wallet]$ ls -ltr /tmp/server.crt
+-rw------- 1 oracle oinstall 618 Aug 23 10:08 /tmp/server.crt
+
+Export the client certificate with the oracle user
+--------------------------------------------------
+	
+cd /u01/client/wallet/
+orapki wallet export -wallet ./ -pwd Oracle123456 -dn "CN=ctuzla-mac" -cert /tmp/client.crt
+
+Oracle PKI Tool Release 18.0.0.0.0 - Production
+Version 18.1.0.0.0
+Copyright (c) 2004, 2017, Oracle and/or its affiliates. All rights reserved.
+
+Operation is successfully completed.
+[oracle@dbcn01 wallet]$ ls -ltr /tmp/client.crt
+-rw------- 1 oracle oinstall 634 Aug 23 10:10 /tmp/client.crt
+
+Import the client certificate into the server wallet with the oracle user
+-------------------------------------------------------------------------
+
+cd /u01/server/wallet/
+orapki wallet add -wallet ./ -pwd Oracle123456 -trusted_cert -cert /tmp/client.crt
+
+Oracle PKI Tool Release 18.0.0.0.0 - Production
+Version 18.1.0.0.0
+Copyright (c) 2004, 2017, Oracle and/or its affiliates. All rights reserved.
+
+Operation is successfully completed.
+
+Import the server certificate into the client wallet with the oracle user
+-------------------------------------------------------------------------
+
+cd /u01/client/wallet/
+orapki wallet add -wallet ./ -pwd Oracle123456 -trusted_cert -cert /tmp/server.crt 
+
+Oracle PKI Tool Release 18.0.0.0.0 - Production
+Version 18.1.0.0.0
+Copyright (c) 2004, 2017, Oracle and/or its affiliates. All rights reserved.
+
+Operation is successfully completed.
+
+Change permissions for the server wallet with the oracle user
+-------------------------------------------------------------
+
+We need to set the permissions for the server wallet so that it can be accessed when we restart the listener after enabling TCPS endpoint.
+
+cd /u01/server/wallet
+chmod 640 cwallet.sso
+
+Add wallet location in the server and the client network files
+**************************************************************
+
+Server-side $ORACLE_HOME/network/admin/sqlnet.ora under the grid user
+---------------------------------------------------------------------
+
+[grid@dbcn01 admin]$ cat /u01/app/18.0.0.0/grid/network/admin/sqlnet.ora
+# sqlnet.ora Network Configuration File: /u01/app/18.0.0.0/grid/network/admin/sqlnet.ora
+# Generated by Oracle configuration tools.
+
+NAMES.DIRECTORY_PATH= (TNSNAMES, EZCONNECT)
+
+WALLET_LOCATION=(SOURCE=(METHOD=FILE)(METHOD_DATA=(DIRECTORY=/u01/server/wallet)))
+
+SSL_SERVER_DN_MATCH=(ON)
+
+
+
+Server-side $ORACLE_HOME/network/admin/listener.ora under the grid user
+-----------------------------------------------------------------------
+
+[grid@dbcn01 admin]$ cat /u01/app/18.0.0.0/grid/network/admin/listener.ora
+WALLET_LOCATION=(SOURCE=(METHOD=FILE)(METHOD_DATA=(DIRECTORY=/u01/server/wallet)))
+
+LISTENER=(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=IPC)(KEY=LISTENER))))		# line added by Agent
+ASMNET1LSNR_ASM=(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=IPC)(KEY=ASMNET1LSNR_ASM))))		# line added by Agent
+ENABLE_GLOBAL_DYNAMIC_ENDPOINT_ASMNET1LSNR_ASM=ON		# line added by Agent
+VALID_NODE_CHECKING_REGISTRATION_ASMNET1LSNR_ASM=SUBNET		# line added by Agent
+ENABLE_GLOBAL_DYNAMIC_ENDPOINT_LISTENER=ON		# line added by Agent
+VALID_NODE_CHECKING_REGISTRATION_LISTENER=SUBNET		# line added by Agent
+
+
+
+Server-side $ORACLE_HOME/network/admin/tnsnames.ora under the oracle user
+-------------------------------------------------------------------------
+
+Las entradas SSIDB_FRA14H y SBENCHPDB van por TCPS:1522, las otras dos por TCP:1521
+
+[oracle@dbcn01 admin]$ cat tnsnames.ora
+# tnsnames.ora Network Configuration File: /u01/app/oracle/product/18.0.0.0/dbhome_1/network/admin/tnsnames.ora
+# Generated by Oracle configuration tools.
+
+LISTENER_SIDB =
+(DESCRIPTION=
+  (ADDRESS_LIST=
+     (ADDRESS = (PROTOCOL = TCP)(HOST = dbcn01)(PORT = 1521))
+     (ADDRESS = (PROTOCOL = TCPS)(HOST = dbcn01)(PORT = 1522))
+  )
+)
+
+
+SIDB_FRA14H =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = dbcn01)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = SIDB_fra14h.sub03010825490.devopsvcn.oraclevcn.com)
+    )
+  )
+
+BENCHPDB =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = dbcn01)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = BENCHPDB.sub03010825490.devopsvcn.oraclevcn.com)
+    )
+  )
+
+SSIDB_FRA14H =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCPS)(HOST = dbcn01)(PORT = 1522))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = SIDB_fra14h.sub03010825490.devopsvcn.oraclevcn.com)
+    )
+      (SECURITY= (SSL_SERVER_CERT_DN="CN=dbcs"))
+  )
+
+SBENCHPDB =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCPS)(HOST = dbcn01)(PORT = 1522))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = BENCHPDB.sub03010825490.devopsvcn.oraclevcn.com)
+    )
+      (SECURITY= (SSL_SERVER_CERT_DN="CN=dbcs"))
+  )
+
+
+
+Add TCPS endpoint to the database listener
+******************************************
+
+
+Now that we are done with configuring our wallets and network files, we can move onto the next step, which is configuring the TCPS endpoint for the database listener. Since our listener is configured under grid, we will be using srvctl command to modify and restart it. Here are the steps:
+
+
+srvctl modify listener -p "TCP:1521/TCPS:1522"
+srvctl stop listener
+srvctl start listener
+
+[grid@dbcn01 admin]$ srvctl config listener
+Name: LISTENER
+Type: Database Listener
+Network: 1, Owner: grid
+Home: <CRS home>
+End points: TCP:1521/TCPS:1522
+Listener is enabled.
+Listener is individually enabled on nodes: 
+Listener is individually disabled on nodes: 
+
+
+srvctl stop database -database SIDB_FRA14H
+srvctl start database -database SIDB_FRA14H
+
+[grid@dbcn01 admin]$ lsnrctl status
+
+LSNRCTL for Linux: Version 18.0.0.0.0 - Production on 27-AUG-2019 08:38:38
+
+Copyright (c) 1991, 2018, Oracle.  All rights reserved.
+
+Connecting to (DESCRIPTION=(ADDRESS=(PROTOCOL=IPC)(KEY=LISTENER)))
+STATUS of the LISTENER
+------------------------
+Alias                     LISTENER
+Version                   TNSLSNR for Linux: Version 18.0.0.0.0 - Production
+Start Date                27-AUG-2019 08:07:22
+Uptime                    0 days 0 hr. 31 min. 15 sec
+Trace Level               off
+Security                  ON: Local OS Authentication
+SNMP                      OFF
+Listener Parameter File   /u01/app/18.0.0.0/grid/network/admin/listener.ora
+Listener Log File         /u01/app/grid/diag/tnslsnr/dbcn01/listener/alert/log.xml
+Listening Endpoints Summary...
+  (DESCRIPTION=(ADDRESS=(PROTOCOL=ipc)(KEY=LISTENER)))
+  (DESCRIPTION=(ADDRESS=(PROTOCOL=tcps)(HOST=10.0.0.42)(PORT=1522)))
+  (DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=10.0.0.42)(PORT=1521)))
+Services Summary...
+Service "+APX" has 1 instance(s).
+  Instance "+APX1", status READY, has 1 handler(s) for this service...
+Service "+ASM" has 1 instance(s).
+  Instance "+ASM1", status READY, has 1 handler(s) for this service...
+Service "+ASM_DATA" has 1 instance(s).
+  Instance "+ASM1", status READY, has 1 handler(s) for this service...
+Service "+ASM_RECO" has 1 instance(s).
+  Instance "+ASM1", status READY, has 1 handler(s) for this service...
+Service "8d3050cf86533ca8e0532a00000a73d3.sub03010825490.devopsvcn.oraclevcn.com" has 1 instance(s).
+  Instance "SIDB", status READY, has 2 handler(s) for this service...
+Service "SIDBXDB.sub03010825490.devopsvcn.oraclevcn.com" has 1 instance(s).
+  Instance "SIDB", status READY, has 1 handler(s) for this service...
+Service "SIDB_fra14h.sub03010825490.devopsvcn.oraclevcn.com" has 1 instance(s).
+  Instance "SIDB", status READY, has 2 handler(s) for this service...
+Service "benchpb.sub03010825490.devopsvcn.oraclevcn.com" has 1 instance(s).
+  Instance "SIDB", status READY, has 2 handler(s) for this service...
+The command completed successfully
+
+### As User Oracle, check the local_listener (LISTENER_SIDB):
+
+[oracle@dbcn01 admin]$ lsnrctl status LISTENER_SIDB
+
+LSNRCTL for Linux: Version 18.0.0.0.0 - Production on 27-AUG-2019 08:39:41
+
+Copyright (c) 1991, 2018, Oracle.  All rights reserved.
+
+Connecting to (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=dbcn01)(PORT=1521)))
+STATUS of the LISTENER
+------------------------
+Alias                     LISTENER
+Version                   TNSLSNR for Linux: Version 18.0.0.0.0 - Production
+Start Date                27-AUG-2019 08:07:22
+Uptime                    0 days 0 hr. 32 min. 18 sec
+Trace Level               off
+Security                  ON: Local OS Authentication
+SNMP                      OFF
+Listener Parameter File   /u01/app/18.0.0.0/grid/network/admin/listener.ora
+Listener Log File         /u01/app/grid/diag/tnslsnr/dbcn01/listener/alert/log.xml
+Listening Endpoints Summary...
+  (DESCRIPTION=(ADDRESS=(PROTOCOL=ipc)(KEY=LISTENER)))
+  (DESCRIPTION=(ADDRESS=(PROTOCOL=tcps)(HOST=10.0.0.42)(PORT=1522)))
+  (DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=10.0.0.42)(PORT=1521)))
+Services Summary...
+Service "+APX" has 1 instance(s).
+  Instance "+APX1", status READY, has 1 handler(s) for this service...
+Service "+ASM" has 1 instance(s).
+  Instance "+ASM1", status READY, has 1 handler(s) for this service...
+Service "+ASM_DATA" has 1 instance(s).
+  Instance "+ASM1", status READY, has 1 handler(s) for this service...
+Service "+ASM_RECO" has 1 instance(s).
+  Instance "+ASM1", status READY, has 1 handler(s) for this service...
+Service "8d3050cf86533ca8e0532a00000a73d3.sub03010825490.devopsvcn.oraclevcn.com" has 1 instance(s).
+  Instance "SIDB", status READY, has 2 handler(s) for this service...
+Service "SIDBXDB.sub03010825490.devopsvcn.oraclevcn.com" has 1 instance(s).
+  Instance "SIDB", status READY, has 1 handler(s) for this service...
+Service "SIDB_fra14h.sub03010825490.devopsvcn.oraclevcn.com" has 1 instance(s).
+  Instance "SIDB", status READY, has 2 handler(s) for this service...
+Service "benchpb.sub03010825490.devopsvcn.oraclevcn.com" has 1 instance(s).
+  Instance "SIDB", status READY, has 2 handler(s) for this service...
+The command completed successfully
+
+Check conection to DB:
+**********************
+
+Por el puerto 1521, todo debe seguir igual:
+*******************************************
+
+[oracle@dbcn01 admin]$ sqlplus system/AaZZ0r_cle#1@SIDB_FRA14H
+
+SQL*Plus: Release 18.0.0.0.0 - Production on Tue Aug 27 08:40:37 2019
+Version 18.6.0.0.0
+
+Copyright (c) 1982, 2018, Oracle.  All rights reserved.
+
+Last Successful login time: Fri Aug 23 2019 09:21:27 +00:00
+
+Connected to:
+Oracle Database 18c EE Extreme Perf Release 18.0.0.0.0 - Production
+Version 18.6.0.0.0
+
+SQL> 
+
+=> OK
+
+Por el puerto 1522: hay que probarlo desde otra maquina, con un instant client:
+*******************************************************************************
+
+Copiar el wallet cliente (/u01/client/wallet/cwallet.sso) a la maquina cliente:
+
+stef@stef-TECRA-Z40t-C:/media/Data/home/stef$ scp -i /media/Data/Preventa/TMP/sshkeybundle/privateKey opc@$(dameip wedobench-si):/tmp/cwallet.sso .
+cwallet.sso                                                                                                  100% 2965    65.1KB/s   00:00    
+stef@stef-TECRA-Z40t-C:/media/Data/home/stef$ scp -i /media/Data/Preventa/TMP/sshkeybundle/privateKey cwallet.sso opc@$(dameip wedosb01):/tmp
+cwallet.sso                                                                                                  100% 2965    59.2KB/s   00:00    
+
+
+[opc@bench-cn02 instantclient_18_3]$ mkdir wallet-tcps-wedobench-si
+[opc@bench-cn02 instantclient_18_3]$ cd wallet-tcps-wedobench-si
+[opc@bench-cn02 wallet-tcps-wedobench-si]$ mv /tmp/cwallet.sso .
+[opc@bench-cn02 wallet-tcps-wedobench-si]$ 
+[opc@bench-cn02 wallet-tcps-wedobench-si]$ 
+[opc@bench-cn02 wallet-tcps-wedobench-si]$ ls -ltr
+total 4
+-rwxrwxr-x. 1 opc opc 2965 ago 27 08:50 cwallet.sso
+
+
+Modificar el sqlnet.ora para apuntar al wallet:
+
+[opc@bench-cn02 ~]$ cd instantclient_18_3/network/admin/
+[opc@bench-cn02 admin]$ vi sqlnet.ora 
+[opc@bench-cn02 admin]$ vi sqlnet.ora 
+[opc@bench-cn02 admin]$ cat sqlnet.ora 
+WALLET_LOCATION = (SOURCE = (METHOD = file) (METHOD_DATA = (DIRECTORY="/home/opc/instantclient_18_3/wallet-tcps-wedobench-si")))
+SSL_SERVER_DN_MATCH=yes
+
+
+Añadir entrada el tnsnames.ora:
+
+
+SBENCHPDB =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCPS)(HOST = dbcn01-scan.sub03010825490.devopsvcn.oraclevcn.com)(PORT = 1522))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED) 
+      (SERVICE_NAME = BENCHPDB.sub03010825490.devopsvcn.oraclevcn.com)
+    )
+      (SECURITY= (SSL_SERVER_CERT_DN="CN=dbcs"))
+  )
+
+
+sqlplus admin/AaZZ0r_cle#1@sbenchpdb
+
+SQL*Plus: Release 18.0.0.0.0 - Production on Tue Aug 27 08:58:39 2019
+Version 18.3.0.0.0
+
+Copyright (c) 1982, 2018, Oracle.  All rights reserved.
+
+ERROR:
+ORA-12543: TNS:destination host unreachable
+
+
+=> Habra que abrir el puerto 1522 en la Security List !!!!
+=> Y añadir el 1522 en el iptables de la maquina de BBDD !!!
+
+iptables -I INPUT 10 -p tcp -m tcp --dport 1522 -j ACCEPT
+
+Con esto se llega, pero ....
+
+[opc@bench-cn02 admin]$ sqlplus system/AaZZ0r_cle#1@sbenchpdb
+
+SQL*Plus: Release 18.0.0.0.0 - Production on Tue Aug 27 09:31:58 2019
+Version 18.3.0.0.0
+
+Copyright (c) 1982, 2018, Oracle.  All rights reserved.
+
+ERROR:
+ORA-28865: SSL connection closed
+
+=> esto es porque el sqlnet.ora del usuario "oracle" debe tener la configuración de wallet SSL, IGUAL que el sqlnet.ora del usuario "grid" !!!!
+=> Imprecisión habitual en los SBS de los PMs !!!
+=> Pero como el sqlnet.ora del usuario "oracle" contiene la configuración del wallet de TDE, caemos otra vez en la casilla de la muerte.
+=> El workaround es el habitual: comentar las lineas utiles para TDE (solo sirven cuando arrancas la BBDD), y añadir las dos lineas de SSL:
+
+OJO: cada vez que arranques la BBDD hay que comentar las 2 lineas de SSL y descomentar las otras. Una vez arrancada, jugada inversa !!!
+
+[oracle@dbcn01 admin]$ cat sqlnet.ora 
+ENCRYPTION_WALLET_LOCATION=(SOURCE=(METHOD=FILE)(METHOD_DATA=(DIRECTORY=/opt/oracle/dcs/commonstore/wallets/tde/$ORACLE_UNQNAME)))
+
+
+#SQLNET.ENCRYPTION_SERVER=REQUIRED
+#SQLNET.CRYPTO_CHECKSUM_SERVER=REQUIRED
+#SQLNET.ENCRYPTION_TYPES_SERVER=(AES256,AES192,AES128)
+#SQLNET.CRYPTO_CHECKSUM_TYPES_SERVER=(SHA1)
+#SQLNET.ENCRYPTION_CLIENT=REQUIRED
+#SQLNET.CRYPTO_CHECKSUM_CLIENT=REQUIRED
+#SQLNET.ENCRYPTION_TYPES_CLIENT=(AES256,AES192,AES128)
+#SQLNET.CRYPTO_CHECKSUM_TYPES_CLIENT=(SHA1)
+
+WALLET_LOCATION=(SOURCE=(METHOD=FILE)(METHOD_DATA=(DIRECTORY=/u01/server/wallet)))
+SSL_SERVER_DN_MATCH=(ON)
+
+
+Ahora la conexión cliente con SSL funciona bien:
+************************************************
+
+[opc@bench-cn02 admin]$ sqlplus system/AaZZ0r_cle#1@sbenchpdb
+
+SQL*Plus: Release 18.0.0.0.0 - Production on Tue Aug 27 09:35:59 2019
+Version 18.3.0.0.0
+
+Copyright (c) 1982, 2018, Oracle.  All rights reserved.
+
+Last Successful login time: Tue Aug 27 2019 09:12:04 +00:00
+
+Connected to:
+Oracle Database 18c EE Extreme Perf Release 18.0.0.0.0 - Production
+Version 18.6.0.0.0
+
+
+********************************************************************************************************************
+CONFIGURACION DEL ADW y CREACION DEL DBLINK !!!
+********************************************************************************************************************
+
+a. Recuperar el fichero cwallet.sso de la BBDD destino BENCHSI:
+***************************************************************
+
+Se trata del Wallet cliente, que esta en la ruta: /u01/client/wallet/cwallet.sso
+
+
+stef@stef-TECRA-Z40t-C:/media/Data/Documentation/Oracle/Cloud/ADWC/SBSs/008.DBLinks.from.ADW$ scp -i /media/Data/Preventa/TMP/sshkeybundle/privateKey opc@$(dameip wedobench-si):/tmp/cwallet.sso .
+cwallet.sso                                                                                                  100% 5880   139.8KB/s   00:00    
+
+
+Este wallet hay que copiarlo en un directorio del Exadata donde esta el ADW.
+Primero lo vamos a copiar al Object Storage, y luego al directorio que vamos a crear a proposito.
+
+b. Subir el wallet al Object Storage:
+*************************************
+
+Desde la consola grafica.
+
+Creo un nuevo bucket WALLETSSO, en el cual subo el cwallet.sso desde mi PC (001).
+
+c. Crear una credencial para acceder al Object Storage:
+*******************************************************
+
+Crear un auth token para el usuario: stephane.duprat@oracle.com
+
+sp:nkU:a1L3l)5.Mn[Wy
+
+Como ADMIN, crear una credencial:
+
+set define off
+BEGIN
+DBMS_CLOUD.DROP_CREDENTIAL('ADMIN_DEF_CRED');
+  
+DBMS_CLOUD.CREATE_CREDENTIAL(
+credential_name => 'ADMIN_DEF_CRED',
+username => 'stephane.duprat@oracle.com', 
+password => 'sp:nkU:a1L3l)5.Mn[Wy'
+);
+END;
+/
+
+
+d. Crear un DIRECTORY dedicado al wallet en el ADW:
+***************************************************
+
+select directory_name, directory_path from dba_directories;
+
+
+DIRECTORY_NAME                                                                                                                   DIRECTORY_PATH                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
+-------------------------------------------------------------------------------------------------------------------------------- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- 
+SDO_DIR_WORK                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+SDO_DIR_ADMIN                                                                                                                    /u02/app/oracle/product/18.1.0.0/dbhome_1/md/admin                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+ORACLE_OCM_CONFIG_DIR2                                                                                                           /u02/app/oracle/product/18.1.0.0/dbhome_1/ccr/state                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+ORACLE_OCM_CONFIG_DIR                                                                                                            /u02/app/oracle/product/18.1.0.0/dbhome_1/ccr/state                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+OPATCH_INST_DIR                                                                                                                  /u02/app/oracle/product/18.1.0.0/dbhome_1/OPatch                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+OPATCH_SCRIPT_DIR                                                                                                                /u02/app/oracle/product/18.1.0.0/dbhome_1/QOpatch                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+OPATCH_LOG_DIR                                                                                                                   /u02/app/oracle/product/18.1.0.0/dbhome_1/rdbms/log                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+ORACLE_BASE                                                                                                                      /u02/app/oracle                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+ORACLE_HOME                                                                                                                      /u02/app/oracle/product/18.1.0.0/dbhome_1                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+DATA_PUMP_DIR                                                                                                                    /u03/dbfs/850C144376DA943CE0531C18000A00C2/data/dpdump                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+SQL_TCB_DIR                                                                                                                      /u03/dbfs/850C144376DA943CE0531C18000A00C2/data/tcb_dir                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+
+11 rows selected.
+
+
+CREATE DIRECTORY WALLETBENCHSI AS 'walletbenchsi';
+
+
+DIRECTORY_NAME                                                                                                                   DIRECTORY_PATH                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
+-------------------------------------------------------------------------------------------------------------------------------- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- 
+SDO_DIR_WORK                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+SDO_DIR_ADMIN                                                                                                                    /u02/app/oracle/product/18.1.0.0/dbhome_1/md/admin                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+ORACLE_OCM_CONFIG_DIR2                                                                                                           /u02/app/oracle/product/18.1.0.0/dbhome_1/ccr/state                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+ORACLE_OCM_CONFIG_DIR                                                                                                            /u02/app/oracle/product/18.1.0.0/dbhome_1/ccr/state                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+OPATCH_INST_DIR                                                                                                                  /u02/app/oracle/product/18.1.0.0/dbhome_1/OPatch                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+OPATCH_SCRIPT_DIR                                                                                                                /u02/app/oracle/product/18.1.0.0/dbhome_1/QOpatch                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+OPATCH_LOG_DIR                                                                                                                   /u02/app/oracle/product/18.1.0.0/dbhome_1/rdbms/log                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+ORACLE_BASE                                                                                                                      /u02/app/oracle                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+ORACLE_HOME                                                                                                                      /u02/app/oracle/product/18.1.0.0/dbhome_1                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+WALLETBENCHSI                                                                                                                    /u03/dbfs/850C144376DA943CE0531C18000A00C2/data/walletbenchsi                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+DATA_PUMP_DIR                                                                                                                    /u03/dbfs/850C144376DA943CE0531C18000A00C2/data/dpdump                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+SQL_TCB_DIR                                                                                                                      /u03/dbfs/850C144376DA943CE0531C18000A00C2/data/tcb_dir                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+
+12 rows selected.
+
+
+=> Ha creado un DIRECTORY sobre "/u03/dbfs/850C144376DA943CE0531C18000A00C2/data/walletbenchsi". Como esta en un DBFS, es un cluster filesystem, visible desde cualquier instancia del RAC.
+
+e. Copiar el wallet del Object Storage al DIRECTORY:
+****************************************************
+
+sqlplus admin/AaZZ0r_cle#1@benchadwdb_medium
+
+SQL> exec dbms_cloud.delete_file ('WALLETBENCHSI','cwallet.sso')
+
+PL/SQL procedure successfully completed.
+
+SQL> select * from table(DBMS_CLOUD.LIST_FILES('WALLETBENCHSI'));
+
+no rows selected
+
+
+BEGIN 
+     DBMS_CLOUD.GET_OBJECT(
+        credential_name => 'ADMIN_DEF_CRED',
+        object_uri => 'https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/wedoinfra/b/WALLETSSO/o/cwallet.sso',
+        directory_name => 'WALLETBENCHSI'); 
+END;
+/
+
+SQL> select * from table(DBMS_CLOUD.LIST_FILES('WALLETBENCHSI'));
+
+OBJECT_NAME
+--------------------------------------------------------------------------------
+     BYTES
+----------
+cwallet.sso
+      2965
+
+
+
+
+f. Crear el dblink:
+*******************
+
+Primero crear en ADW una credencial para acceder a la BBDD remota: me conectare al usuario SSB, en la PDB BENCHPDB:
+
+sqlplus admin/AaZZ0r_cle#1@benchadwdb_medium
+
+BEGIN
+  DBMS_CLOUD.CREATE_CREDENTIAL(
+    credential_name => 'DBCS_LINK_CRED',
+    username => 'SSB',
+    password => 'AaZZ0r_cle#1');
+END;
+/
+
+
+Ahora creamos el DBLink:
+************************
+
+BEGIN
+  DBMS_CLOUD_ADMIN.CREATE_DATABASE_LINK(
+    db_link_name => 'DBCSLINK', 
+    hostname => 'dbcn01-scan.sub03010825490.devopsvcn.oraclevcn.com', 
+    port => '1522',
+    service_name => 'benchpb.sub03010825490.devopsvcn.oraclevcn.com',
+    ssl_server_cert_dn => 'CN=dbcs',
+    credential_name => 'DBCS_LINK_CRED',
+    directory_name => 'WALLETBENCHSI');
+END;
+/   
+
+Probar el DBLink:
+*****************
+
+
+SQL> select * from dual@DBCSLINK;
+select * from dual@DBCSLINK
+                   *
+ERROR at line 1:
+ORA-12545: Connect failed because target host or object does not exist
+
+
+=> Parece que no resuelve "dbcn01-scan.sub03010825490.devopsvcn.oraclevcn.com" ....
+
+Pruebo por IP:
+**************
+
+BEGIN
+	DBMS_CLOUD_ADMIN.DROP_DATABASE_LINK ('DBCSLINK');
+END;
+/
+
+
+BEGIN
+  DBMS_CLOUD_ADMIN.CREATE_DATABASE_LINK(
+    db_link_name => 'DBCSLINK', 
+    hostname => '130.61.60.188', 
+    port => '1522',
+    service_name => 'benchpb.sub03010825490.devopsvcn.oraclevcn.com',
+    ssl_server_cert_dn => 'CN=dbcs',
+    credential_name => 'DBCS_LINK_CRED',
+    directory_name => 'WALLETBENCHSI');
+END;
+/
+
+SQL> select * from dual@DBCSLINK;
+
+D
+-
+X
+
+SQL> 
+
+
+=> FUNCIONA !!!
+
+El inconveniente es que hay que definir el DBLink sobre la IP publica del DBCS !!!
+
+
+
+
+
+BEGIN
+  DBMS_CLOUD_ADMIN.CREATE_DATABASE_LINK(
+    db_link_name => 'DBCSLINK', 
+    hostname => '10.0.0.42', 
+    port => '1522',
+    service_name => 'benchpb.sub03010825490.devopsvcn.oraclevcn.com',
+    ssl_server_cert_dn => 'CN=dbcs',
+    credential_name => 'DBCS_LINK_CRED',
+    directory_name => 'WALLETBENCHSI');
+END;
+/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+

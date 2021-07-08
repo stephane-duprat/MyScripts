@@ -1,0 +1,22 @@
+a. Setup policies:
+******************
+
+allow service cloudEvents to use ons-topic in compartment DevOps
+
+Screenshots 001 and 002.
+
+b. Setup a notification topic:
+******************************
+
+Create a notification topic. (003 and 004).
+Create a subscription for this topic (005 to 010).
+
+c. Setup a rule:
+****************
+
+011 to 017
+
+d. Create an ADB and check email:
+*********************************
+
+018 to 021

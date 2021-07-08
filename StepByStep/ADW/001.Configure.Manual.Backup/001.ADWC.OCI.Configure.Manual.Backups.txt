@@ -1,0 +1,55 @@
+ADWC - Configurar manual backup: Ref. https://docs.cloud.oracle.com/iaas/Content/Database/Tasks/adwbackingup.htm?Highlight=autonomous%20datawarehouse%20manual%20backup
+********************************
+
+a. Crear una propiedad de default_bucket como usuario ADMIN:
+------------------------------------------------------------
+
+Using an Oracle database client, set the database default_bucket property to your Oracle Cloud Infrastructure Object Storage tenancy URL. The format of the tenancy URL is https://swiftobjectstorage.region.oraclecloud.com/v1/object_storage_namespace_string. You must to do this using the ADMIN user.
+
+region = eu-frankfurt-1
+object_storage_namespace_string = telefonicacloud2 (ver pantallazo 000.Screenshot from 2018-06-29 15-09-39.png)
+
+ALTER DATABASE PROPERTY SET default_bucket='https://swiftobjectstorage.eu-frankfurt-1.oraclecloud.com/v1/telefonicacloud2';
+
+
+
+
+b. Crear un bucket en el Object Storage:
+----------------------------------------
+
+Ver pantallazo (004.2018-06-29 13-31-44.png)
+
+c. Crear una credential:
+------------------------
+
+Using an Oracle database client, create a credential for your Oracle Cloud Infrastructure Object Storage account. Use DBMS_CLOUD.CREATE_CREDENTIAL to create the credential. You must to do this using the ADMIN user:
+
+BEGIN
+DBMS_CLOUD.CREATE_CREDENTIAL(
+credential_name => 'DEF_CRED_NAME',
+username => 'stephane.duprat@oracle.com', 
+password => ')7[<RDgTP6d{wiqdb<X>'
+);
+END;
+/
+
+Pantallazo: 005.Screenshot from 2018-06-29 17-28-29.png
+
+La password es un AUTH_TOKEN generado para este usuario desde la consola (Menu Users). NB: las auth_token sustituyen los swift password !!!
+
+
+d. Set default credential:
+--------------------------
+
+Set the database property default_credential to the credential you created in the previous step:
+
+ALTER DATABASE PROPERTY SET default_credential = 'ADMIN.DEF_CRED_NAME';
+
+SELECT PROPERTY_VALUE from database_properties WHERE PROPERTY_NAME='DEFAULT_BUCKET';
+
+
+e. Take a manual backup:
+------------------------
+
+
+Pantallazo: 006.Screenshot from 2018-06-29 17-28-08.png

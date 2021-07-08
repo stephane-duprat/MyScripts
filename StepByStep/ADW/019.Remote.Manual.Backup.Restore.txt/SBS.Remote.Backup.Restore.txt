@@ -1,0 +1,46 @@
+A. Create a IAM user, and an auth token:
+****************************************
+
+From OCI console, create an IAM user: api_user
+Create an auth token on that user => lhYXN4san]n-#wva)R#Q
+
+B. Update ADB default properties:
+*********************************
+
+SELECT PROPERTY_VALUE from database_properties WHERE PROPERTY_NAME='DEFAULT_BACKUP_BUCKET';
+SELECT PROPERTY_VALUE from database_properties WHERE PROPERTY_NAME='DEFAULT_CREDENTIAL';
+
+--- Create a new crediential with the user and auth token !!!
+
+BEGIN
+DBMS_CLOUD.CREATE_CREDENTIAL(
+credential_name => 'DEF_CRED_NAME',
+username => 'api_user', 
+password => 'lhYXN4san]n-#wva)R#Q'
+);
+END;
+/
+
+--- Update ADB properties  !!!
+ALTER DATABASE PROPERTY SET DEFAULT_CREDENTIAL = 'ADMIN.DEF_CRED_NAME';
+
+
+---- In another region, create an Object Storage Bucket, and pick the URL endpoint and namespace !!!
+--- Update ADB properties !!!
+
+ALTER DATABASE PROPERTY SET default_backup_bucket='https://swiftobjectstorage.eu-frankfurt-1.oraclecloud.com/v1/axytqfrtl9et/BCK4BACKUP';
+
+C. From OCI console, take a manual backup:
+******************************************
+
+The backup finishes OK, and we can see the files in the remote bucket.
+
+D. Try to instantiate a new ADB in Amsterdam, using the remote backup:
+**********************************************************************
+
+Clone from backup doesn't allow to choose the manual backup.
+
+E. Restore current ADB from manual backup:
+******************************************
+
+=> OK.

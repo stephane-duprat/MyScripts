@@ -1,0 +1,294 @@
+--- Hay que instalar el instant client 19.6
+---
+
+--- Luego se crea un bucket DATAPUMP y una credencial en la BBDD
+
+
+sqlplus admin/AaZZ0r_cle#1@db202004031003_low
+
+BEGIN
+DBMS_CLOUD.CREATE_CREDENTIAL(
+credential_name => 'SDU_CRED_NAME',
+username => 'oracleidentitycloudservice/stephane.duprat@oracle.com',
+password => 'd(7cDln+>rfI5PN;;+-s'
+);
+END;
+/
+
+ALTER DATABASE PROPERTY SET DEFAULT_CREDENTIAL = 'ADMIN.SDU_CRED_NAME';
+
+--- Creo unas tablas en el ADW !!!
+
+sqlplus admin/AaZZ0r_cle#1@db202004031003_low
+
+create user SDU identified by "AaZZ0r_cle#1";
+grant dwrole to SDU;
+alter user SDU quota unlimited on DATA;
+
+sqlplus sdu/AaZZ0r_cle#1@db202004031003_low
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Fri Apr 3 09:29:47 2020
+Version 19.6.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.5.0.0.0
+
+
+SQL> create table t1 as select * from user_tab_privs;
+
+Table created.
+
+SQL> select count(*) from t1;
+
+  COUNT(*)
+----------
+	 1
+
+SQL> 
+
+-- Ahora hago el expdp directamente al Object Storage !!!
+---
+
+[opc@bench-cn02 wallet]$ which expdp
+~/instantclient_19_6/expdp
+
+
+expdp admin/AaZZ0r_cle#1@db202004031003_medium \
+     dumpfile=default_credential:https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr1dxegs4ram/b/DATAPUMP/o/exp_SDU.dmp \
+     encryption_pwd_prompt=yes \
+     logfile=export.log \
+     schemas=SDU \
+     directory=data_pump_dir
+
+Export: Release 19.0.0.0.0 - Production on Fri Apr 3 09:37:16 2020
+Version 19.6.0.0.0
+
+Copyright (c) 1982, 2019, Oracle and/or its affiliates.  All rights reserved.
+
+Connected to: Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+
+Encryption Password: 
+Starting "ADMIN"."SYS_EXPORT_SCHEMA_01":  admin/********@db202004031003_medium dumpfile=default_credential:https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr1dxegs4ram/b/DATAPUMP/o/exp_SDU.dmp encryption_pwd_prompt=yes logfile=export.log schemas=SDU directory=data_pump_dir 
+Processing object type SCHEMA_EXPORT/TABLE/TABLE_DATA
+Processing object type SCHEMA_EXPORT/TABLE/STATISTICS/TABLE_STATISTICS
+Processing object type SCHEMA_EXPORT/STATISTICS/MARKER
+Processing object type SCHEMA_EXPORT/USER
+Processing object type SCHEMA_EXPORT/ROLE_GRANT
+Processing object type SCHEMA_EXPORT/DEFAULT_ROLE
+Processing object type SCHEMA_EXPORT/TABLESPACE_QUOTA
+Processing object type SCHEMA_EXPORT/PASSWORD_HISTORY
+Processing object type SCHEMA_EXPORT/PRE_SCHEMA/PROCACT_SCHEMA
+Processing object type SCHEMA_EXPORT/TABLE/TABLE
+Processing object type SCHEMA_EXPORT/POST_SCHEMA/PROCACT_SCHEMA
+. . exported "SDU"."T1"                                  8.929 KB       1 rows
+Master table "ADMIN"."SYS_EXPORT_SCHEMA_01" successfully loaded/unloaded
+******************************************************************************
+Dump file set for ADMIN.SYS_EXPORT_SCHEMA_01 is:
+  https://swiftobjectstorage.eu-frankfurt-1.oraclecloud.com/v1/fr1dxegs4ram/DATAPUMP/exp_SDU.dmp
+Job "ADMIN"."SYS_EXPORT_SCHEMA_01" successfully completed at Fri Apr 3 09:40:49 2020 elapsed 0 00:03:27
+
+[opc@bench-cn02 wallet]$ sqlplus admin/AaZZ0r_cle#1@db202004031003_low
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Fri Apr 3 09:48:49 2020
+Version 19.6.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+Last Successful login time: Fri Apr 03 2020 09:37:16 +00:00
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.5.0.0.0
+
+SQL> 
+SQL> 
+SQL> select * from table(dbms_cloud.list_files ('DATA_PUMP_DIR'));
+
+OBJECT_NAME
+--------------------------------------------------------------------------------
+     BYTES
+----------
+CHECKSUM
+--------------------------------------------------------------------------------
+CREATED
+---------------------------------------------------------------------------
+LAST_MODIFIED
+---------------------------------------------------------------------------
+export.log
+      1627
+
+
+OBJECT_NAME
+--------------------------------------------------------------------------------
+     BYTES
+----------
+CHECKSUM
+--------------------------------------------------------------------------------
+CREATED
+---------------------------------------------------------------------------
+LAST_MODIFIED
+---------------------------------------------------------------------------
+03-APR-20 09.37.23.000000 AM +00:00
+03-APR-20 09.40.51.000000 AM +00:00
+
+
+BEGIN
+DBMS_CLOUD.PUT_OBJECT
+(
+    credential_name => 'SDU_CRED_NAME',
+    object_uri => 'https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr1dxegs4ram/b/DATAPUMP/o/expdp_SDU.log',
+    directory_name  => 'DATA_PUMP_DIR',
+    file_name => 'export.log');
+END;
+/
+
+SQL> 
+
+Este es el contenido del LOG:
+
+;;; 
+Export: Release 19.0.0.0.0 - Production on Fri Apr 3 09:37:16 2020
+Version 19.6.0.0.0
+
+Copyright (c) 1982, 2019, Oracle and/or its affiliates.  All rights reserved.
+;;; 
+Connected to: Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Starting "ADMIN"."SYS_EXPORT_SCHEMA_01":  admin/********@db202004031003_medium dumpfile=default_credential:https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr1dxegs4ram/b/DATAPUMP/o/exp_SDU.dmp encryption_pwd_prompt=yes logfile=export.log schemas=SDU directory=data_pump_dir 
+Processing object type SCHEMA_EXPORT/TABLE/TABLE_DATA
+Processing object type SCHEMA_EXPORT/TABLE/STATISTICS/TABLE_STATISTICS
+Processing object type SCHEMA_EXPORT/STATISTICS/MARKER
+Processing object type SCHEMA_EXPORT/USER
+Processing object type SCHEMA_EXPORT/ROLE_GRANT
+Processing object type SCHEMA_EXPORT/DEFAULT_ROLE
+Processing object type SCHEMA_EXPORT/TABLESPACE_QUOTA
+Processing object type SCHEMA_EXPORT/PASSWORD_HISTORY
+Processing object type SCHEMA_EXPORT/PRE_SCHEMA/PROCACT_SCHEMA
+Processing object type SCHEMA_EXPORT/TABLE/TABLE
+Processing object type SCHEMA_EXPORT/POST_SCHEMA/PROCACT_SCHEMA
+. . exported "SDU"."T1"                                  8.929 KB       1 rows
+Master table "ADMIN"."SYS_EXPORT_SCHEMA_01" successfully loaded/unloaded
+******************************************************************************
+Dump file set for ADMIN.SYS_EXPORT_SCHEMA_01 is:
+  https://swiftobjectstorage.eu-frankfurt-1.oraclecloud.com/v1/fr1dxegs4ram/DATAPUMP/exp_SDU.dmp
+Job "ADMIN"."SYS_EXPORT_SCHEMA_01" successfully completed at Fri Apr 3 09:40:49 2020 elapsed 0 00:03:27
+
+En el bucket hay 2 ficheros:
+
+	- exp_SDU.dmp que esta vacio
+	- exp_SDU.dmp_aaaaaa que tiene tamaño > 0
+
+
+--- Voy a intentar re-importar desde el DMP:
+---
+
+SQL> drop user sdu cascade;
+
+User dropped.
+
+
+impdp admin/AaZZ0r_cle#1@db202004031003_medium \
+directory=DATA_PUMP_DIR \
+credential=SDU_CRED_NAME \
+dumpfile=https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr1dxegs4ram/b/DATAPUMP/o/exp_SDU.dmp_aaaaaa \
+transform=segment_attributes:n \
+transform=dwcs_cvt_iots:y transform=constraint_use_default_index:y \
+exclude=cluster,indextype,materialized_zonemap,db_link
+
+Import: Release 19.0.0.0.0 - Production on Fri Apr 3 09:58:26 2020
+Version 19.6.0.0.0
+
+Copyright (c) 1982, 2019, Oracle and/or its affiliates.  All rights reserved.
+
+Connected to: Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Master table "ADMIN"."SYS_IMPORT_FULL_01" successfully loaded/unloaded
+Starting "ADMIN"."SYS_IMPORT_FULL_01":  admin/********@db202004031003_medium directory=DATA_PUMP_DIR credential=SDU_CRED_NAME dumpfile=https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/fr1dxegs4ram/b/DATAPUMP/o/exp_SDU.dmp_aaaaaa transform=segment_attributes:n transform=dwcs_cvt_iots:y transform=constraint_use_default_index:y exclude=cluster,indextype,materialized_zonemap,db_link 
+Processing object type SCHEMA_EXPORT/USER
+Processing object type SCHEMA_EXPORT/ROLE_GRANT
+Processing object type SCHEMA_EXPORT/DEFAULT_ROLE
+Processing object type SCHEMA_EXPORT/TABLESPACE_QUOTA
+Processing object type SCHEMA_EXPORT/PASSWORD_HISTORY
+Processing object type SCHEMA_EXPORT/PRE_SCHEMA/PROCACT_SCHEMA
+Processing object type SCHEMA_EXPORT/TABLE/TABLE
+Processing object type SCHEMA_EXPORT/TABLE/TABLE_DATA
+. . imported "SDU"."T1"                                  8.929 KB       1 rows
+Processing object type SCHEMA_EXPORT/TABLE/STATISTICS/TABLE_STATISTICS
+Processing object type SCHEMA_EXPORT/STATISTICS/MARKER
+Processing object type SCHEMA_EXPORT/POST_SCHEMA/PROCACT_SCHEMA
+Job "ADMIN"."SYS_IMPORT_FULL_01" successfully completed at Fri Apr 3 09:59:14 2020 elapsed 0 00:00:46
+
+=> GOOD
+
+---- Ahora vuelvo a dropear el usuario, y hago el impdp desde un PAR, sin credential !!!
+---
+Creo un PAR sobre el fichero: https://objectstorage.eu-frankfurt-1.oraclecloud.com/p/_v73lcyDJXOnTLSTdeo6-FxJDPAY8R2NwMtu5KXmEbU/n/fr1dxegs4ram/b/DATAPUMP/o/exp_SDU.dmp_aaaaaa
+
+impdp admin/AaZZ0r_cle#1@db202004031003_medium \
+directory=DATA_PUMP_DIR \
+dumpfile=https://objectstorage.eu-frankfurt-1.oraclecloud.com/p/_v73lcyDJXOnTLSTdeo6-FxJDPAY8R2NwMtu5KXmEbU/n/fr1dxegs4ram/b/DATAPUMP/o/exp_SDU.dmp_aaaaaa \
+transform=segment_attributes:n \
+transform=dwcs_cvt_iots:y transform=constraint_use_default_index:y \
+exclude=cluster,indextype,materialized_zonemap,db_link
+
+=> Esto falla, porque, según doc:
+
+If you are using an Oracle Cloud Infrastructure pre-authenticated URI, you still need to supply a credential parameter. However, credentials for a pre-authenticated URL are ignored (and the supplied credentials do not need to be valid). See DBMS_CLOUD Package File URI Formats for information on Oracle Cloud Infrastructure pre-authenticated URIs.
+
+impdp admin/AaZZ0r_cle#1@db202004031003_medium \
+directory=DATA_PUMP_DIR \
+credential=NON_EXISTING_CRED \
+dumpfile=https://objectstorage.eu-frankfurt-1.oraclecloud.com/p/_v73lcyDJXOnTLSTdeo6-FxJDPAY8R2NwMtu5KXmEbU/n/fr1dxegs4ram/b/DATAPUMP/o/exp_SDU.dmp_aaaaaa \
+transform=segment_attributes:n \
+transform=dwcs_cvt_iots:y transform=constraint_use_default_index:y \
+exclude=cluster,indextype,materialized_zonemap,db_link
+ 
+Import: Release 19.0.0.0.0 - Production on Fri Apr 3 10:08:11 2020
+Version 19.6.0.0.0
+
+Copyright (c) 1982, 2019, Oracle and/or its affiliates.  All rights reserved.
+
+Connected to: Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Master table "ADMIN"."SYS_IMPORT_FULL_01" successfully loaded/unloaded
+Starting "ADMIN"."SYS_IMPORT_FULL_01":  admin/********@db202004031003_medium directory=DATA_PUMP_DIR credential=NO_EXISTING_CRED dumpfile=https://objectstorage.eu-frankfurt-1.oraclecloud.com/p/_v73lcyDJXOnTLSTdeo6-FxJDPAY8R2NwMtu5KXmEbU/n/fr1dxegs4ram/b/DATAPUMP/o/exp_SDU.dmp_aaaaaa transform=segment_attributes:n transform=dwcs_cvt_iots:y transform=constraint_use_default_index:y exclude=cluster,indextype,materialized_zonemap,db_link 
+Processing object type SCHEMA_EXPORT/USER
+Processing object type SCHEMA_EXPORT/ROLE_GRANT
+Processing object type SCHEMA_EXPORT/DEFAULT_ROLE
+Processing object type SCHEMA_EXPORT/TABLESPACE_QUOTA
+Processing object type SCHEMA_EXPORT/PASSWORD_HISTORY
+Processing object type SCHEMA_EXPORT/PRE_SCHEMA/PROCACT_SCHEMA
+Processing object type SCHEMA_EXPORT/TABLE/TABLE
+Processing object type SCHEMA_EXPORT/TABLE/TABLE_DATA
+. . imported "SDU"."T1"                                  8.929 KB       1 rows
+Processing object type SCHEMA_EXPORT/TABLE/STATISTICS/TABLE_STATISTICS
+Processing object type SCHEMA_EXPORT/STATISTICS/MARKER
+Processing object type SCHEMA_EXPORT/POST_SCHEMA/PROCACT_SCHEMA
+Job "ADMIN"."SYS_IMPORT_FULL_01" successfully completed at Fri Apr 3 10:08:57 2020 elapsed 0 00:00:44
+
+=> Esto si funciona !!! 
+Es decir que el parametro "credential" hay que ponerlo en el comando, pero puede contener cualquier cosa, ya que al ser la URL del DMP un PAR no se va a a comprobar la credencial.
+
+
+[opc@bench-cn02 wallet]$ sqlplus sdu/AaZZ0r_cle#1@db202004031003_low
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Fri Apr 3 10:09:28 2020
+Version 19.6.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.5.0.0.0
+
+SQL> select count(*) from t1;
+
+  COUNT(*)
+----------
+	 1
+
+SQL> 
+
+

@@ -1,0 +1,14 @@
+Nombre;Apellido1;Apellido2;DNI;Grupo
+Gonzalo;Perez;Torre;1873Q;1
+Álvaro;Carretero;Rodriguez;1924Y;2
+Jose;Alum;Alvarez;5437P;1
+Pablo;Garcia;Blanco;3893H;3
+Luis;Alonso;Vidal;4729J;4
+Jorge;Ruiz;Prados;2172P;4
+Paula;Beltran;Garrido;3984J;3
+Carla;Carballo;Vazquez;5597M;2
+Nerea;Fernandez;Rios;5791T;2
+Lucia;Gomez;Gomez;4482W;1
+Alba;Sanchez;Duprat;8127L;3
+Valeria;Garcia;Vendrell;8953A;4
+Diego;Armando;Maradona;999X;3

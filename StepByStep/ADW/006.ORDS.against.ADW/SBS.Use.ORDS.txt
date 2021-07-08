@@ -1,0 +1,80 @@
+## As ADMIN user !!!
+
+CREATE USER SDU IDENTIFIED BY "AaZZ0r_cle#1";
+
+GRANT CONNECT, resource TO SDU;
+ 
+ALTER USER SDU QUOTA UNLIMITED ON DATA;
+
+BEGIN
+    ords_admin.enable_schema (
+        p_enabled               => TRUE,
+        p_schema                => 'SDU',
+        p_url_mapping_type      => 'BASE_PATH',
+        p_url_mapping_pattern   => 'SDU', -- this flag says, use 'tjs' in the URIs for JEFF
+        p_auto_rest_auth        => TRUE   -- this flag says, don't expose my REST APIs
+    );
+    COMMIT;
+END;
+/
+
+
+### Connect to SqlDeveloper WEB with your new user SDU !!!
+
+https://ixcsyvrmtjm8ebr-benchadwdb.adb.eu-frankfurt-1.oraclecloudapps.com/ords/SDU/_sdw/?nav=worksheet
+
+
+CREATE TABLE hello_world (
+     id        INTEGER,
+     message   VARCHAR2 (25),
+     CONSTRAINT hello_world_pk PRIMARY KEY (id)
+ );
+
+
+INSERT INTO hello_world (id, message) VALUES (1, 'Hello');
+INSERT INTO hello_world (id, message) VALUES (2, 'world,');
+INSERT INTO hello_world (id, message) VALUES (3, 'it''s');
+INSERT INTO hello_world (id, message) VALUES (4, 'me,');
+INSERT INTO hello_world (id, message) VALUES (5, 'Stef.');
+
+
+BEGIN
+     ords.enable_schema (
+         p_enabled               => TRUE,
+         p_schema                => 'SDU',
+         p_url_mapping_type      => 'BASE_PATH',
+         p_url_mapping_pattern   => 'SDU',
+         p_auto_rest_auth        => TRUE
+     );
+ ords.define_module (    
+        p_module_name            => 'test',
+        p_base_path              => '/test/',
+        p_items_per_page         => 25,
+        p_status                 => 'PUBLISHED',
+        p_comments               => NULL );
+ords.define_template ( 
+        p_module_name            => 'test',
+        p_pattern                => 'query1/', --is there anyone out there?
+        p_priority               => 0,
+        p_etag_type              => 'HASH',
+        p_etag_query             => NULL, 
+        p_comments               => NULL );
+ords.define_handler (
+        p_module_name            => 'test',
+        p_pattern                => 'query1/',
+        p_method                 => 'GET', 
+        p_source_type            => 'json/collection',
+        p_items_per_page         => 25,
+        p_mimes_allowed          => '',
+        p_comments               => NULL,
+        p_source                 => 'select * from hello_world' );
+ 
+ COMMIT;
+ END;
+/
+
+### Now you can access your data with:
+
+https://ixcsyvrmtjm8ebr-benchadwdb.adb.eu-frankfurt-1.oraclecloudapps.com/ords/SDU/test/query1/
+
+
