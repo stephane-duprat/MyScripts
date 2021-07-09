@@ -1,0 +1,114 @@
+Conexion a OCI: 
+
+
+
+a. Creo un subnet publica con el CIDR 10.0.8.0/24
+b. Desplego OMS+OMR a partir de la imagen del Market Place
+
+Password de enterprise manager: AaCCC0r_cle#1
+Password de Agent registration: AaCCC0r_cle#1
+Password de Weblogic Admin and Node Manager: Welcome1
+
+Public Key: OJO, tiene que estar en formato base64 !!!
+
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDlu18kfDrgJW7hPTvYJ5W3kEFSaA/BzNNo+rXRDAaM8WXUciTGt6WDMXRZkm5bhiFU0fmEOKcxRDvPCjBSdTDvDDg5Rcf8e+49Z8PibAlNKDsMarsjnBJC3YwLeDJBnjksyMrfG1oEp4ak41HnxrfK+gvhN8AqzNPufsTznRWiXrJnRsbqRF1tsli8wRlFx4cXbnajLW4gwSvB38YN2P9gUYaGsgk7oXTvHQrjT5MRxzupVJ4haQMPJoSUrNshJRe/mXim6RVZ8l91TfwPbOUqUAUndbx0TIGRNa2Rj9ujqcPVMMHk/UnQmpUeGpLohOyXIEEBnqGkP6blpsgOFasR ssh-key-2021-05-06
+
+
+Password OMR: AaCCC0r_cle#1
+Password DBSNMP: AaCCC0r_cle#1
+
+=> ormjob20210601094011
+
+
+Error: 400-InvalidParameter
+
+Provider version: 4.28.0, released on 2021-05-26.
+
+Service: Core Instance
+
+Error Message: Invalid ssh public key; must be in base64 format
+
+OPC request ID: 1d17af00bae9ecbd0d75836b5138ee26/C1165075B62375399A27DA8C4880563B/9E069821E5B15A1EA8D77DB5A26C2D49
+
+Suggestion: Please update the parameter(s) in the Terraform config as per error message Invalid ssh public key; must be in base64 format
+
+
+https://docs.oracle.com/en/enterprise-manager/cloud-control/enterprise-manager-cloud-control/13.4/emcim/
+
+Después de abrir puertos en la security list de la subnet donde esta el DBCS:
+
+--- Desde la maquina del OEM !!!
+
+./emctl config agent addinternaltargets
+
+Communication between the Oracle Management Service to the Agent is unavailable. Any features or displayed information requiring this communication will be unavailable.
+
+Error en emoms.trc:
+
+[2021-06-03T14:13:47.664+00:00] [EMGC_OMS1] [ERROR] [] [oracle.sysman.emdrep.target.EntityUtil] [tid: Job Step 12639 Job Long-System Pool:JobWorker] [userId: <anonymous>] [ecid: a7290a0d-c59b-4758-b0f3-fecbd65837be-00000009,0:1077:108922] [APP: empbs] [partition-name: DOMAIN] [tenant-name: GLOBAL] PromoteTarget for agent: https://dbvm1.subnet05110904.vcn05110904.oraclevcn.com:3872/emd/main/with changeSequence: 992 got Exception with Message: Unable to connect to the agent at https://dbvm1.subnet05110904.vcn05110904.oraclevcn.com:3872/emd/main/ [connect timed out] isTransientExceptionThrown: 0[[
+oracle.sysman.emSDK.agent.comm.exception.ConnectTimeoutException: Unable to connect to the agent at https://dbvm1.subnet05110904.vcn05110904.oraclevcn.com:3872/emd/main/ [connect timed out]
+
+[oracle@oms1 oracle]$ curl https://dbvm1.subnet05110904.vcn05110904.oraclevcn.com:3872/emd/main/
+curl: (7) Failed to connect to dbvm1.subnet05110904.vcn05110904.oraclevcn.com port 3872: Connection timed out
+[oracle@oms1 oracle]$
+
+-- Añado el puerto 3872 en la security list de la subred donde esta el DBCS, y el error cambia:
+
+[2021-06-03T14:27:42.201+00:00] [EMGC_OMS1] [ERROR] [] [oracle.sysman.emdrep.target.EntityUtil] [tid: Job Step 12659 Job Long-System Pool:JobWorker] [userId: <anonymous>] [ecid: a7290a0d-c59b-4758-b0f3-fecbd65837be-00000009,0:1077:108922] [APP: empbs] [partition-name: DOMAIN] [tenant-name: GLOBAL] PromoteTarget for agent: https://dbvm1.subnet05110904.vcn05110904.oraclevcn.com:3872/emd/main/with changeSequence: 1007 got Exception with Message: Unable to connect to the agent at https://dbvm1.subnet05110904.vcn05110904.oraclevcn.com:3872/emd/main/ [No route to host (Host unreachable)] isTransientExceptionThrown: 0[[
+oracle.sysman.emSDK.agent.comm.exception.ConnectException: Unable to connect to the agent at https://dbvm1.subnet05110904.vcn05110904.oraclevcn.com:3872/emd/main/ [No route to host (Host unreachable)]
+
+--- Esto sospecho que es por el IPTABLES del DBCS !!!
+
+Intento añadir el puerto 3872 en iptables !!!
+
+[root@dbvm1 ~]# iptables -L
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination
+ACCEPT     all  --  anywhere             anywhere             state RELATED,ESTABLISHED
+ACCEPT     icmp --  anywhere             anywhere
+ACCEPT     all  --  anywhere             anywhere
+ACCEPT     all  --  anywhere             anywhere
+ACCEPT     tcp  --  anywhere             anywhere             state NEW tcp dpt:ssh
+ACCEPT     tcp  --  anywhere             anywhere             state NEW tcp dpt:ncube-lm /* Required for access to Database Listener, Do not remove or modify.  */
+ACCEPT     tcp  --  anywhere             anywhere             state NEW tcp dpt:commplex-main /* Required for TFA traffic.  */
+ACCEPT     tcp  --  anywhere             anywhere             state NEW tcp dpt:lm-x /* This rule is recommended and enables the Oracle Notification Services (ONS) to communicate about Fast Application Notification (FAN) events.  */
+ACCEPT     tcp  --  link-local/16        anywhere             state NEW tcp dpt:arcp /* Required for instance management by the Database Service, Do not remove or modify.  */
+ACCEPT     tcp  --  link-local/16        anywhere             state NEW tcp dpt:7060 /* Required for instance management by the Database Service, Do not remove or modify.  */
+ACCEPT     tcp  --  link-local/16        anywhere             state NEW tcp dpt:ssh /* Required for instance management by the Database Service, Do not remove or modify.  */
+REJECT     all  --  anywhere             anywhere             reject-with icmp-host-prohibited
+
+-- Añado el puerto 3872 en el IPTABLES !!!
+
+iptables -I INPUT 11 -p tcp -m tcp --dport 3872 -j ACCEPT
+
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination
+ACCEPT     all  --  anywhere             anywhere             state RELATED,ESTABLISHED
+ACCEPT     icmp --  anywhere             anywhere
+ACCEPT     all  --  anywhere             anywhere
+ACCEPT     all  --  anywhere             anywhere
+ACCEPT     tcp  --  anywhere             anywhere             state NEW tcp dpt:ssh
+ACCEPT     tcp  --  anywhere             anywhere             state NEW tcp dpt:ncube-lm /* Required for access to Database Listener, Do not remove or modify.  */
+ACCEPT     tcp  --  anywhere             anywhere             state NEW tcp dpt:commplex-main /* Required for TFA traffic.  */
+ACCEPT     tcp  --  anywhere             anywhere             state NEW tcp dpt:lm-x /* This rule is recommended and enables the Oracle Notification Services (ONS) to communicate about Fast Application Notification (FAN) events.  */
+ACCEPT     tcp  --  link-local/16        anywhere             state NEW tcp dpt:arcp /* Required for instance management by the Database Service, Do not remove or modify.  */
+ACCEPT     tcp  --  link-local/16        anywhere             state NEW tcp dpt:7060 /* Required for instance management by the Database Service, Do not remove or modify.  */
+ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:oem-agent
+ACCEPT     tcp  --  link-local/16        anywhere             state NEW tcp dpt:ssh /* Required for instance management by the Database Service, Do not remove or modify.  */
+REJECT     all  --  anywhere             anywhere             reject-with icmp-host-prohibited
+
+
+
+=> Ahora funciona !!!
+
+--- Añado también el 1521 !!!
+iptables -I INPUT 12 -p tcp -m tcp --dport 1521 -j ACCEPT
+
+SQL> alter user dbsnmp identified by "AaCCC0r_cle#1" container=ALL;
+
+
+
+EM 13.4: Post Upgrade to EM 13.4, Agent Page Shows 'Communication between the Oracle Management Service to the Agent is unavailable' (Doc ID 2641072.1)
+
+13.4 How to Disable Weak SSLCipherSuites in Enterprise Manager 13.4 Cloud Control (Doc ID 2663483.1)
+
