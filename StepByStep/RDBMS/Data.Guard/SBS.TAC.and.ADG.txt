@@ -1,0 +1,537 @@
+Primary database: DBSDU_TSE
+Standby database: DBSDU_fra2bw
+
+DG Broker:
+
+DGMGRL> show configuration;
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Protection Mode: MaxPerformance
+  Members:
+  DBSDU_TSE    - Primary database
+    DBSDU_fra2bw - Physical standby database
+
+Fast-Start Failover:  Disabled
+
+Configuration Status:
+SUCCESS   (status updated 37 seconds ago)
+
+DGMGRL> show database DBSDU_TSE;
+
+Database - DBSDU_TSE
+
+  Role:                PRIMARY
+  Intended State:      TRANSPORT-ON
+  Instance(s):
+    DBSDU
+
+Database Status:
+SUCCESS
+
+DGMGRL> show database DBSDU_fra2bw;
+
+Database - DBSDU_fra2bw
+
+  Role:                PHYSICAL STANDBY
+  Intended State:      APPLY-ON
+  Transport Lag:       0 seconds (computed 1 second ago)
+  Apply Lag:           6 seconds (computed 1 second ago)
+  Average Apply Rate:  8.00 KByte/s
+  Real Time Query:     ON
+  Instance(s):
+    DBSDU
+
+Database Status:
+SUCCESS
+
+
+1. Install ACdemo app on the primary node
+******************************************
+
+cd /home/oracle
+wget https://objectstorage.us-ashburn-1.oraclecloud.com/p/O8AOujhwl1dSTqhfH69f3nkV6TNZWU3KaIF4TZ-XuCaZ5w-xHEQ14ViOVhUXQjPB/n/oradbclouducm/b/LiveLabTemp/o/ACDemo_19c.zip
+
+unzip ACDemo_19c.zip
+
+chmod +x SETUP_AC_TEST.sh
+./SETUP_AC_TEST.sh
+
+-- This fails to create services, we'll create them manually for ADG !!!
+--- The following commands must be run on both the primary and standby database !!!
+
+[oracle@dbcn ~]$ srvctl add service -d $(srvctl config database) -s svc_tac -pdb PDBSDU -role primary -replay_init_time 1000 -failoverretry 30 -failoverdelay 3 -commit_outcome TRUE -failovertype AUTO -failover_restore AUTO 
+[oracle@dbcn ~]$ srvctl start service -d $(srvctl config database) -s svc_tac
+[oracle@dbcn ~]$ srvctl status service -d $(srvctl config database) -s svc_tac
+Service svc_tac is running on instance(s) DBSDU
+
+[oracle@dbcn ~]$ srvctl config service -d $(srvctl config database) -s svc_tac
+Service name: svc_tac
+Server pool:
+Cardinality: 1
+Service role: PRIMARY
+Management policy: AUTOMATIC
+DTP transaction: false
+AQ HA notifications: false
+Global: false
+Commit Outcome: true
+Reset State: NONE
+Failover type: AUTO
+Failover method:
+Failover retries: 30
+Failover delay: 3
+Failover restore: AUTO
+Connection Load Balancing Goal: LONG
+Runtime Load Balancing Goal: NONE
+TAF policy specification: NONE
+Edition:
+Pluggable database name: PDBSDU
+Hub service:
+Maximum lag time: ANY
+SQL Translation Profile:
+Retention: 86400 seconds
+Replay Initiation Time: 1000 seconds
+Drain timeout:
+Stop option:
+Session State Consistency: AUTO
+GSM Flags: 0
+Service is enabled
+Preferred instances: DBSDU
+Available instances:
+CSS critical: no
+Service uses Java: false
+
+
+2. Switchover and check that svc_tac comes up on the new primary
+*****************************************************************
+DGMGRL> show configuration;
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Protection Mode: MaxPerformance
+  Members:
+  DBSDU_TSE    - Primary database
+    DBSDU_fra2bw - Physical standby database
+
+Fast-Start Failover:  Disabled
+
+Configuration Status:
+SUCCESS   (status updated 56 seconds ago)
+
+--- Service svc_tac is running on the primary !!!
+
+[oracle@dbcn ~]$ srvctl status service -d $(srvctl config database) -s svc_tac
+Service svc_tac is running on instance(s) DBSDU
+
+--- Service svc_tac is not running on the standby !!!
+
+[oracle@dbcnsby ~]$ srvctl status service -d $(srvctl config database) -s svc_tac
+Service svc_tac is not running.
+
+--- Setup app schema !!!
+--- In the PDB, create schema HR and poulate some table !!!
+   set heading off
+   set feedback off
+   drop user hr cascade;
+   create user hr identified by "AaZZ0r_cle#1" default tablespace USERS temporary tablespace temp;
+   grant connect, create session, resource to hr;
+   alter user hr quota unlimited on USERS;
+
+   create table HR.emp4AC(
+    empno number(4) not null,
+    ename varchar2(10),
+    job char(9),
+    mgr number(4),
+    hiredate date,
+    sal number(7,2),
+    comm number(7,2),
+    deptno number(2),
+    constraint emp_primary_key primary key (empno));
+
+   insert into hr.emp4AC values(7839,'KING','PRESIDENT',NULL,'17-NOV-81',50000,NULL,10);
+   insert into hr.emp4AC values(7698,'BLAKE','MANAGER',NULL,'17-NOV-81',8000,NULL,10);
+   insert into hr.emp4AC values(7782,'CLARK','MANAGER',NULL,'17-NOV-81',8000,NULL,10);
+   insert into hr.emp4AC values(7566,'JONES','MANAGER',NULL,'17-NOV-81',8000,NULL,10);
+   insert into hr.emp4AC values(7654,'MARTIN','SALESMAN',NULL,'17-NOV-81',7000,NULL,10);
+   insert into hr.emp4AC values(7499,'ALLEN','MANAGER',NULL,'17-NOV-81',9000,NULL,10);
+   insert into hr.emp4AC values(7844,'TURNER','CLERK',NULL,'17-NOV-81',5000,NULL,10);
+   insert into hr.emp4AC values(7900,'JAMES','MANAGER',NULL,'17-NOV-81',9000,NULL,10);
+   insert into hr.emp4AC values(7521,'WARD','PRGRMMER',NULL,'17-NOV-81',9000,NULL,10);
+   insert into hr.emp4AC values(7902,'FORD','SALESMAN',NULL,'17-NOV-81',7000,NULL,10);
+   insert into hr.emp4AC values(7369,'SMITH','PRGRMMER',NULL,'17-NOV-81',8000,NULL,10);
+   insert into hr.emp4AC values(7788,'SCOTT','CLERK',NULL,'17-NOV-81',6000,NULL,10);
+   insert into hr.emp4AC values(7876,'ADAMS','PRGRMMER',NULL,'17-NOV-81',7000,NULL,10);
+   insert into hr.emp4AC values(7934,'MILLER','SALESMAN',NULL,'17-NOV-81',9000,NULL,10);
+   commit;
+
+
+--- Run the app !!!
+--- Configure tac_replay.properties !!!
+--- The connect string is formated for ADG failover !!!
+
+[oracle@dbcn acdemo]$ cat /home/oracle/acdemo/tac_replay.properties
+# Stub file to create tac_replay.properties
+# Use replay datasource
+datasource=oracle.jdbc.replay.OracleDataSourceImpl
+
+# Set verbose mode
+VERBOSE=FALSE
+
+# database JDBC URL
+url=jdbc:oracle:thin:@(DESCRIPTION=(CONNECT_TIMEOUT=90)(RETRY_COUNT=50)(RETRY_DELAY=3)(TRANSPORT_CONNECT_TIMEOUT=3)(ADDRESS_LIST = (FAILOVER = ON) (LOAD_BALANCE = OFF)(ADDRESS = (PROTOCOL = TCP)(HOST = dbcn-scan.sub06221433571.skynet.oraclevcn.com)(PORT = 1521))(ADDRESS = (PROTOCOL = TCP)(HOST = dbcnsby-scan.sub06221433571.skynet.oraclevcn.com)(PORT = 1521)))(CONNECT_DATA =(SERVICE_NAME = svc_tac.sub06221433571.skynet.oraclevcn.com)))
+
+# database username and password:
+username=hr
+password=AaZZ0r_cle#1
+
+# Enable FAN
+fastConnectionFailover=TRUE
+
+#Disable connection tests
+validateConnectionOnBorrow=TRUE
+
+# number of connections in the UCP's pool:
+ucp_pool_size=20
+
+#Connection Wait Timeout for busy pool
+connectionWaitTimeout=5
+
+# number of active threads (this simulates concurrent load):
+number_of_threads=10
+
+# think time is how much time the threads will sleep before looping:
+thread_think_time=50
+[oracle@dbcn acdemo]$
+
+cd /home/oracle/acdemo
+
+[oracle@dbcn acdemo]$ ./runtacreplay
+######################################################
+Connecting to jdbc:oracle:thin:@(DESCRIPTION=(CONNECT_TIMEOUT=90)(RETRY_COUNT=50)(RETRY_DELAY=3)(TRANSPORT_CONNECT_TIMEOUT=3)(ADDRESS_LIST = (FAILOVER = ON) (LOAD_BALANCE = OFF)(ADDRESS = (PROTOCOL = TCP)(HOST = dbcn-scan.sub06221433571.skynet.oraclevcn.com)(PORT = 1521))(ADDRESS = (PROTOCOL = TCP)(HOST = dbcnsby-scan.sub06221433571.skynet.oraclevcn.com)(PORT = 1521)))(CONNECT_DATA =(SERVICE_NAME = svc_tac.sub06221433571.skynet.oraclevcn.com)))
+ # of Threads             : 10
+ UCP pool size            : 20
+FCF Enabled:  true
+VCoB Enabled: true
+ONS Configuration:  null
+Thread think time        : 50 ms
+######################################################
+
+Starting the pool now... (please wait)
+Pool is started in 7051ms
+3 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 525, avg response time from db 27ms
+6 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 1189, avg response time from db 20ms
+4 borrowed, 1 pending, 0ms getConnection wait, TotalBorrowed 1867, avg response time from db 19ms
+6 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 2553, avg response time from db 18ms
+10 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 3201, avg response time from db 20ms
+0 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 3863, avg response time from db 22ms
+5 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 4563, avg response time from db 17ms
+8 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 5256, avg response time from db 17ms
+6 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 5948, avg response time from db 17ms
+3 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 6650, avg response time from db 17ms
+3 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 7329, avg response time from db 19ms
+3 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 8000, avg response time from db 19ms
+3 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 8715, avg response time from db 16ms
+2 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 9431, avg response time from db 15ms
+8 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 10120, avg response time from db 18ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 10823, avg response time from db 17ms
+5 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 11510, avg response time from db 18ms
+0 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 12098, avg response time from db 30ms
+2 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 12824, avg response time from db 14ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 13532, avg response time from db 16ms
+3 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 14231, avg response time from db 17ms
+2 borrowed, 1 pending, 0ms getConnection wait, TotalBorrowed 14939, avg response time from db 16ms
+3 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 15608, avg response time from db 20ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 16285, avg response time from db 19ms
+0 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 16986, avg response time from db 16ms
+0 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 17675, avg response time from db 18ms
+2 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 18353, avg response time from db 19ms
+4 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 19069, avg response time from db 16ms
+3 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 19750, avg response time from db 19ms
+2 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 20369, avg response time from db 25ms
+8 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 21021, avg response time from db 22ms
+
+
+--- Perform a switchover !!!
+--- From another terminal, connect to dg broker and perform a switchover !!!
+
+[oracle@dbcnsby ~]$ dgmgrl
+DGMGRL for Linux: Release 21.0.0.0.0 - Production on Fri Jul 2 12:46:35 2021
+Version 21.1.0.0.0
+
+Copyright (c) 1982, 2020, Oracle and/or its affiliates.  All rights reserved.
+
+Welcome to DGMGRL, type "help" for information.
+DGMGRL> connect sys/AaZZ0r_cle#1 as sysdba
+Connected to "DBSDU_fra2bw"
+Connected as SYSDBA.
+
+DGMGRL> show configuration
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Protection Mode: MaxPerformance
+  Members:
+  DBSDU_fra2bw - Primary database
+    DBSDU_TSE    - Physical standby database
+
+Fast-Start Failover:  Disabled
+
+Configuration Status:
+SUCCESS   (status updated 11 seconds ago)
+
+
+switchover to DBSDU_TSE
+
+--- No errors reported !!!
+
+2 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 21697, avg response time from db 19ms
+3 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 22360, avg response time from db 20ms
+3 borrowed, 1 pending, 0ms getConnection wait, TotalBorrowed 23033, avg response time from db 19ms
+10 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 23229, avg response time from db 23ms
+10 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 23229                                   <====== Freeze during switchover restart sequences !!!
+10 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 23229
+10 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 23229
+10 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 23229
+10 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 23229
+10 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 23229
+10 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 23229
+10 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 23229
+10 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 23229
+10 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 23229
+10 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 23229
+10 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 23229
+10 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 23229
+10 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 23229
+10 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 23229
+10 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 23229                                  <====== End of freeze during switchover restart sequences !!!
+8 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 23425, avg response time from db 3503ms
+2 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 23974, avg response time from db 356ms
+7 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 24479, avg response time from db 44ms
+8 borrowed, 2 pending, 0ms getConnection wait, TotalBorrowed 25008, avg response time from db 39ms
+7 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 25560, avg response time from db 35ms
+5 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 26056, avg response time from db 45ms
+0 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 26648, avg response time from db 30ms
+2 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 27232, avg response time from db 31ms
+6 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 27830, avg response time from db 29ms
+0 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 28427, avg response time from db 29ms
+5 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 29070, avg response time from db 23ms
+0 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 29684, avg response time from db 27ms
+3 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 30273, avg response time from db 30ms
+5 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 30906, avg response time from db 24ms
+0 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 31551, avg response time from db 23ms
+0 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 32200, avg response time from db 22ms
+7 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 32869, avg response time from db 21ms
+4 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 33454, avg response time from db 31ms
+4 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 34085, avg response time from db 25ms
+3 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 34666, avg response time from db 32ms
+6 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 35284, avg response time from db 26ms
+0 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 35902, avg response time from db 26ms
+5 borrowed, 1 pending, 0ms getConnection wait, TotalBorrowed 36543, avg response time from db 24ms
+2 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 37146, avg response time from db 28ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 37753, avg response time from db 28ms
+7 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 38426, avg response time from db 20ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 39098, avg response time from db 19ms
+3 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 39783, avg response time from db 18ms
+
+
+---- With an SQL*Plus session !!!
+
+DGMGRL> show configuration
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Protection Mode: MaxPerformance
+  Members:
+  DBSDU_TSE    - Primary database
+    DBSDU_fra2bw - Physical standby database
+
+Fast-Start Failover:  Disabled
+
+Configuration Status:
+SUCCESS   (status updated 58 seconds ago)
+
+
+sqlplus hr/AaZZ0r_cle#1@"(DESCRIPTION=(CONNECT_TIMEOUT=90)(RETRY_COUNT=50)(RETRY_DELAY=3)(TRANSPORT_CONNECT_TIMEOUT=3)(ADDRESS_LIST = (FAILOVER = ON) (LOAD_BALANCE = OFF)(ADDRESS = (PROTOCOL = TCP)(HOST = dbcn-scan.sub06221433571.skynet.oraclevcn.com)(PORT = 1521))(ADDRESS = (PROTOCOL = TCP)(HOST = dbcnsby-scan.sub06221433571.skynet.oraclevcn.com)(PORT = 1521)))(CONNECT_DATA =(SERVICE_NAME = svc_tac.sub06221433571.skynet.oraclevcn.com)))"
+
+SQL> select SYS_CONTEXT('USERENV','DB_UNIQUE_NAME') from dual;
+
+SYS_CONTEXT('USERENV','DB_UNIQUE_NAME')
+--------------------------------------------------------------------------------
+DBSDU_TSE
+
+-- I'm connected to the primary DB !!!
+
+--- Initiate a transaction, but don't commit .... will commit that after the coffee break !!!
+
+SQL> update emp4ac set sal=sal*1.1 where ename like 'Bob%';
+
+19935 rows updated.
+
+
+--- From another terminal, perform a switchover !!!
+
+DGMGRL> switchover to DBSDU_fra2bw
+2021-07-05T11:57:37.070+00:00
+Performing switchover NOW, please wait...
+
+2021-07-05T11:57:39.623+00:00
+Operation requires a connection to database "DBSDU_fra2bw"
+Connecting ...
+Connected to "DBSDU_fra2bw"
+Connected as SYSDBA.
+
+2021-07-05T11:57:40.329+00:00
+Continuing with the switchover...
+
+2021-07-05T11:58:19.446+00:00
+New primary database "DBSDU_fra2bw" is opening...
+
+2021-07-05T11:58:19.447+00:00
+Oracle Clusterware is restarting database "DBSDU_TSE" ...
+Connected to "DBSDU_TSE"
+Connected to "DBSDU_TSE"
+2021-07-05T11:59:13.207+00:00
+Switchover succeeded, new primary is "dbsdu_fra2bw"
+
+2021-07-05T11:59:13.212+00:00
+Switchover processing complete, broker ready.
+DGMGRL> show configuration
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Protection Mode: MaxPerformance
+  Members:
+  DBSDU_fra2bw - Primary database
+    DBSDU_TSE    - Physical standby database
+
+Fast-Start Failover:  Disabled
+
+Configuration Status:
+SUCCESS   (status updated 9 seconds ago)
+
+DGMGRL> show database DBSDU_TSE
+
+Database - DBSDU_TSE
+
+  Role:                PHYSICAL STANDBY
+  Intended State:      APPLY-ON
+  Transport Lag:       0 seconds (computed 7 seconds ago)
+  Apply Lag:           1 minute 43 seconds (computed 7 seconds ago)
+  Average Apply Rate:  3.10 MByte/s
+  Real Time Query:     ON
+  Instance(s):
+    DBSDU
+
+  Database Warning(s):
+    ORA-16853: apply lag has exceeded specified threshold
+
+Database Status:
+WARNING
+
+DGMGRL>
+
+---- The lag disappears after a few seconds !!!
+
+DGMGRL> show database DBSDU_TSE
+
+Database - DBSDU_TSE
+
+  Role:                PHYSICAL STANDBY
+  Intended State:      APPLY-ON
+  Transport Lag:       0 seconds (computed 11 seconds ago)
+  Apply Lag:           0 seconds (computed 11 seconds ago)
+  Average Apply Rate:  39.00 KByte/s
+  Real Time Query:     ON
+  Instance(s):
+    DBSDU
+
+Database Status:
+SUCCESS
+
+DGMGRL>
+
+---- No error reported on the Sql*Plus session !!!
+---- Coming back from the coffee break, and committing !!!
+SQL> commit;
+
+Commit complete.
+
+SQL>
+SQL> select SYS_CONTEXT('USERENV','DB_UNIQUE_NAME') from dual;
+
+SYS_CONTEXT('USERENV','DB_UNIQUE_NAME')
+--------------------------------------------------------------------------------
+DBSDU_fra2bw
+
+==> Transaction was initiated on DBSDU_TSE, and committed on DBSDU_fra2bw !!!
+
+--- Switchback (optionnally) !!!
+
+DGMGRL> switchover to DBSDU_TSE
+2021-07-05T12:03:07.108+00:00
+Performing switchover NOW, please wait...
+
+2021-07-05T12:03:10.495+00:00
+Operation requires a connection to database "DBSDU_TSE"
+Connecting ...
+Connected to "DBSDU_TSE"
+Connected as SYSDBA.
+
+2021-07-05T12:03:11.250+00:00
+Continuing with the switchover...
+
+2021-07-05T12:03:52.650+00:00
+New primary database "DBSDU_TSE" is opening...
+
+2021-07-05T12:03:52.650+00:00
+Oracle Clusterware is restarting database "DBSDU_fra2bw" ...
+Connected to "DBSDU_fra2bw"
+Connected to "DBSDU_fra2bw"
+2021-07-05T12:04:52.446+00:00
+Switchover succeeded, new primary is "dbsdu_tse"
+
+2021-07-05T12:04:52.450+00:00
+Switchover processing complete, broker ready.
+
+DGMGRL> show database DBSDU_fra2bw
+
+Database - DBSDU_fra2bw
+
+  Role:                PHYSICAL STANDBY
+  Intended State:      APPLY-ON
+  Transport Lag:       0 seconds (computed 7 seconds ago)
+  Apply Lag:           0 seconds (computed 7 seconds ago)
+  Average Apply Rate:  156.00 KByte/s
+  Real Time Query:     ON
+  Instance(s):
+    DBSDU
+
+Database Status:
+SUCCESS
+
+
+DGMGRL> validate database DBSDU_fra2bw
+
+  Database Role:     Physical standby database
+  Primary Database:  DBSDU_TSE
+
+  Ready for Switchover:  Yes
+  Ready for Failover:    Yes (Primary Running)
+
+  Managed by Clusterware:
+    DBSDU_TSE   :  YES
+    DBSDU_fra2bw:  YES
+
+  Standby Apply-Related Information:
+    Apply State:      Running
+    Apply Lag:        7 seconds (computed 1 second ago)
+    Apply Delay:      0 minutes
+
+  Parameter Settings:
+    Parameter                       DBSDU_TSE Value          DBSDU_fra2bw Value
+    DB_BLOCK_CHECKING               FULL                     FULL
+    DB_BLOCK_CHECKSUM               FULL                     FULL
+    DB_LOST_WRITE_PROTECT           TYPICAL                  TYPICAL
+
+DGMGRL>
+

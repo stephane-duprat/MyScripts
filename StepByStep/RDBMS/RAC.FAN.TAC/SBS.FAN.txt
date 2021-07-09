@@ -1,0 +1,413 @@
+Ref. https://apexapps.oracle.com/pls/apex/dbpm/r/livelabs/workshop-attendee-2?p210_workshop_id=801&p210_type=3&session=108321420218751
+
+1. Connect to both compute nodes as grid
+****************************************
+
+[opc@jumphost ~]$ ssh -i ./.ssh/RAC_ssh-key-2021-06-23.key opc@sduclunode1.sub06221433571.skynet.oraclevcn.com
+Last login: Thu Jul  1 09:41:50 2021 from 10.0.0.25
+[opc@sduclunode1 ~]$ sudo -i
+[root@sduclunode1 ~]# su - grid
+Last login: Thu Jul  1 12:29:08 UTC 2021
+[grid@sduclunode1 ~]$ env | grep ORACLE
+ORACLE_SID=+ASM1
+ORACLE_HOME=/u01/app/19.0.0.0/grid
+[grid@sduclunode1 ~]$ cd /u01/app/19.0.0.0/grid/racg/usrco/
+[grid@sduclunode1 usrco]$
+[grid@sduclunode1 usrco]$
+[grid@sduclunode1 usrco]$ ls -ltr
+total 0
+
+--- On both nodes, create a shell script FAN callout !!!
+
+[grid@sduclunode1 usrco]$ cat callout-log.sh
+#!/usr/bin/bash
+umask 022
+FAN_LOGFILE=/tmp/`hostname -s`_events.log
+echo $* " reported = "`date` >> ${FAN_LOGFILE} &
+[grid@sduclunode1 usrco]$
+[grid@sduclunode1 usrco]$ chmod +x callout-log.sh
+
+
+[grid@sduclunode2 usrco]$ cat callout-log.sh
+#!/usr/bin/bash
+umask 022
+FAN_LOGFILE=/tmp/`hostname -s`_events.log
+echo $* " reported = "`date` >> ${FAN_LOGFILE} &
+[grid@sduclunode2 usrco]$ chmod +x callout-log.sh
+
+2. Generate an event
+*********************
+
+-- From any node, list the cluster resources !!!
+
+[grid@sduclunode1 usrco]$ crsctl stat res -t
+--------------------------------------------------------------------------------
+Name           Target  State        Server                   State details
+--------------------------------------------------------------------------------
+Local Resources
+--------------------------------------------------------------------------------
+ora.DATA.COMMONSTORE.advm
+               ONLINE  ONLINE       sduclunode1              STABLE
+               ONLINE  ONLINE       sduclunode2              STABLE
+ora.LISTENER.lsnr
+               ONLINE  ONLINE       sduclunode1              STABLE
+               ONLINE  ONLINE       sduclunode2              STABLE
+ora.chad
+               ONLINE  ONLINE       sduclunode1              STABLE
+               ONLINE  ONLINE       sduclunode2              STABLE
+ora.data.commonstore.acfs
+               ONLINE  ONLINE       sduclunode1              mounted on /opt/orac
+                                                             le/dcs/commonstore,S
+                                                             TABLE
+               ONLINE  ONLINE       sduclunode2              mounted on /opt/orac
+                                                             le/dcs/commonstore,S
+                                                             TABLE
+ora.net1.network
+               ONLINE  ONLINE       sduclunode1              STABLE
+               ONLINE  ONLINE       sduclunode2              STABLE
+ora.ons
+               ONLINE  ONLINE       sduclunode1              STABLE
+               ONLINE  ONLINE       sduclunode2              STABLE
+ora.proxy_advm
+               ONLINE  ONLINE       sduclunode1              STABLE
+               ONLINE  ONLINE       sduclunode2              STABLE
+--------------------------------------------------------------------------------
+Cluster Resources
+--------------------------------------------------------------------------------
+ora.ASMNET1LSNR_ASM.lsnr(ora.asmgroup)
+      1        ONLINE  ONLINE       sduclunode1              STABLE
+      2        ONLINE  ONLINE       sduclunode2              STABLE
+ora.DATA.dg(ora.asmgroup)
+      1        ONLINE  ONLINE       sduclunode1              STABLE
+      2        ONLINE  ONLINE       sduclunode2              STABLE
+ora.LISTENER_SCAN1.lsnr
+      1        ONLINE  ONLINE       sduclunode1              STABLE
+ora.LISTENER_SCAN2.lsnr
+      1        ONLINE  ONLINE       sduclunode2              STABLE
+ora.LISTENER_SCAN3.lsnr
+      1        ONLINE  ONLINE       sduclunode2              STABLE
+ora.RECO.dg(ora.asmgroup)
+      1        ONLINE  ONLINE       sduclunode1              STABLE
+      2        ONLINE  ONLINE       sduclunode2              STABLE
+ora.asm(ora.asmgroup)
+      1        ONLINE  ONLINE       sduclunode1              Started,STABLE
+      2        ONLINE  ONLINE       sduclunode2              Started,STABLE
+ora.asmnet1.asmnetwork(ora.asmgroup)
+      1        ONLINE  ONLINE       sduclunode1              STABLE
+      2        ONLINE  ONLINE       sduclunode2              STABLE
+ora.cvu
+      1        ONLINE  ONLINE       sduclunode2              STABLE
+ora.qosmserver
+      1        ONLINE  ONLINE       sduclunode2              STABLE
+ora.scan1.vip
+      1        ONLINE  ONLINE       sduclunode1              STABLE
+ora.scan2.vip
+      1        ONLINE  ONLINE       sduclunode2              STABLE
+ora.scan3.vip
+      1        ONLINE  ONLINE       sduclunode2              STABLE
+ora.sduclunode1.vip
+      1        ONLINE  ONLINE       sduclunode1              STABLE
+ora.sduclunode2.vip
+      1        ONLINE  ONLINE       sduclunode2              STABLE
+ora.sdurac_dbsdu.ac_service.svc
+      2        ONLINE  ONLINE       sduclunode1              STABLE
+ora.sdurac_dbsdu.db
+      1        ONLINE  ONLINE       sduclunode1              Open,HOME=/u01/app/o
+                                                             racle/product/19.0.0
+                                                             .0/dbhome_1,STABLE
+      2        ONLINE  ONLINE       sduclunode2              Open,HOME=/u01/app/o
+                                                             racle/product/19.0.0
+                                                             .0/dbhome_1,STABLE
+ora.sdurac_dbsdu.noac.svc
+      1        ONLINE  ONLINE       sduclunode2              STABLE
+ora.sdurac_dbsdu.tac_service.svc
+      2        ONLINE  ONLINE       sduclunode1              STABLE
+--------------------------------------------------------------------------------
+
+--- Stop instance 1:
+
+[grid@sduclunode1 usrco]$ srvctl stop instance -d $(srvctl config database) -i SDURAC1 -o immediate -force
+[grid@sduclunode1 usrco]$
+
+[grid@sduclunode1 usrco]$ srvctl status database -d $(srvctl config database)
+Instance SDURAC1 is not running on node sduclunode1
+Instance SDURAC2 is running on node sduclunode2
+[grid@sduclunode1 usrco]$
+
+--- If your callout was written correctly and had the appropriate execute permissions, a file named hostname_events.log should be visible in the /tmp directory
+
+ls -altr /tmp/sduclunode1*.log
+
+[grid@sduclunode1 usrco]$ ls -altr /tmp/sduclunode1*.log
+-rw-r--r-- 1 grid oinstall 1452 Jul  1 12:40 /tmp/sduclunode1_events.log
+
+[grid@sduclunode1 usrco]$ cat /tmp/sduclunode1_events.log
+SERVICEMEMBER VERSION=1.0 service=ac_service.sub06221433571.skynet.oraclevcn.com database=sdurac_dbsdu instance=SDURAC1 host=sduclunode1 status=down reason=USER timestamp=2021-07-01 12:39:52 timezone=+00:00 db_domain=sub06221433571.skynet.oraclevcn.com  reported = Thu Jul 1 12:39:52 UTC 2021
+SERVICE VERSION=1.0 service=ac_service.sub06221433571.skynet.oraclevcn.com database=sdurac_dbsdu instance=SDURAC1 host=sduclunode1 status=down reason=USER timestamp=2021-07-01 12:39:52 timezone=+00:00 db_domain=sub06221433571.skynet.oraclevcn.com  reported = Thu Jul 1 12:39:52 UTC 2021
+SERVICEMEMBER VERSION=1.0 service=tac_service.sub06221433571.skynet.oraclevcn.com database=sdurac_dbsdu instance=SDURAC1 host=sduclunode1 status=down reason=USER timestamp=2021-07-01 12:39:52 timezone=+00:00 db_domain=sub06221433571.skynet.oraclevcn.com  reported = Thu Jul 1 12:39:52 UTC 2021
+SERVICE VERSION=1.0 service=tac_service.sub06221433571.skynet.oraclevcn.com database=sdurac_dbsdu instance=SDURAC1 host=sduclunode1 status=down reason=USER timestamp=2021-07-01 12:39:52 timezone=+00:00 db_domain=sub06221433571.skynet.oraclevcn.com  reported = Thu Jul 1 12:39:52 UTC 2021
+INSTANCE VERSION=1.0 service=sdurac_dbsdu.sub06221433571.skynet.oraclevcn.com database=sdurac_dbsdu instance=SDURAC1 host=sduclunode1 status=down reason=USER timestamp=2021-07-01 12:40:20 timezone=+00:00 db_domain=sub06221433571.skynet.oraclevcn.com  reported = Thu Jul 1 12:40:20 UTC 2021
+[grid@sduclunode1 usrco]$
+
+--- Start the instance, and check the log !!!
+
+[grid@sduclunode1 usrco]$ srvctl start instance -d $(srvctl config database) -i SDURAC1
+[grid@sduclunode1 usrco]$ srvctl status database -d $(srvctl config database)
+Instance SDURAC1 is running on node sduclunode1
+Instance SDURAC2 is running on node sduclunode2
+[grid@sduclunode1 usrco]$ ls -altr /tmp/sduclunode1*.log
+-rw-r--r-- 1 grid oinstall 2908 Jul  1 12:45 /tmp/sduclunode1_events.log
+[grid@sduclunode1 usrco]$ cat /tmp/sduclunode1_events.log
+SERVICEMEMBER VERSION=1.0 service=ac_service.sub06221433571.skynet.oraclevcn.com database=sdurac_dbsdu instance=SDURAC1 host=sduclunode1 status=down reason=USER timestamp=2021-07-01 12:39:52 timezone=+00:00 db_domain=sub06221433571.skynet.oraclevcn.com  reported = Thu Jul 1 12:39:52 UTC 2021
+SERVICE VERSION=1.0 service=ac_service.sub06221433571.skynet.oraclevcn.com database=sdurac_dbsdu instance=SDURAC1 host=sduclunode1 status=down reason=USER timestamp=2021-07-01 12:39:52 timezone=+00:00 db_domain=sub06221433571.skynet.oraclevcn.com  reported = Thu Jul 1 12:39:52 UTC 2021
+SERVICEMEMBER VERSION=1.0 service=tac_service.sub06221433571.skynet.oraclevcn.com database=sdurac_dbsdu instance=SDURAC1 host=sduclunode1 status=down reason=USER timestamp=2021-07-01 12:39:52 timezone=+00:00 db_domain=sub06221433571.skynet.oraclevcn.com  reported = Thu Jul 1 12:39:52 UTC 2021
+SERVICE VERSION=1.0 service=tac_service.sub06221433571.skynet.oraclevcn.com database=sdurac_dbsdu instance=SDURAC1 host=sduclunode1 status=down reason=USER timestamp=2021-07-01 12:39:52 timezone=+00:00 db_domain=sub06221433571.skynet.oraclevcn.com  reported = Thu Jul 1 12:39:52 UTC 2021
+INSTANCE VERSION=1.0 service=sdurac_dbsdu.sub06221433571.skynet.oraclevcn.com database=sdurac_dbsdu instance=SDURAC1 host=sduclunode1 status=down reason=USER timestamp=2021-07-01 12:40:20 timezone=+00:00 db_domain=sub06221433571.skynet.oraclevcn.com  reported = Thu Jul 1 12:40:20 UTC 2021
+INSTANCE VERSION=1.0 service=sdurac_dbsdu.sub06221433571.skynet.oraclevcn.com database=sdurac_dbsdu instance=SDURAC1 host=sduclunode1 status=up reason=USER timestamp=2021-07-01 12:45:45 timezone=+00:00 db_domain=sub06221433571.skynet.oraclevcn.com  reported = Thu Jul 1 12:45:45 UTC 2021
+SERVICEMEMBER VERSION=1.0 service=ac_service.sub06221433571.skynet.oraclevcn.com database=sdurac_dbsdu instance=SDURAC1 host=sduclunode1 status=up reason=USER card=1 timestamp=2021-07-01 12:45:47 timezone=+00:00 db_domain=sub06221433571.skynet.oraclevcn.com  reported = Thu Jul 1 12:45:47 UTC 2021
+SERVICE VERSION=1.0 service=ac_service.sub06221433571.skynet.oraclevcn.com database=sdurac_dbsdu instance=SDURAC1 host=sduclunode1 status=up reason=USER timestamp=2021-07-01 12:45:47 timezone=+00:00 db_domain=sub06221433571.skynet.oraclevcn.com  reported = Thu Jul 1 12:45:47 UTC 2021
+SERVICEMEMBER VERSION=1.0 service=tac_service.sub06221433571.skynet.oraclevcn.com database=sdurac_dbsdu instance=SDURAC1 host=sduclunode1 status=up reason=USER card=1 timestamp=2021-07-01 12:45:47 timezone=+00:00 db_domain=sub06221433571.skynet.oraclevcn.com  reported = Thu Jul 1 12:45:47 UTC 2021
+SERVICE VERSION=1.0 service=tac_service.sub06221433571.skynet.oraclevcn.com database=sdurac_dbsdu instance=SDURAC1 host=sduclunode1 status=up reason=USER timestamp=2021-07-01 12:45:47 timezone=+00:00 db_domain=sub06221433571.skynet.oraclevcn.com  reported = Thu Jul 1 12:45:47 UTC 2021
+
+
+3. Create a more elaborate callout
+**********************************
+
+Callouts can be any shell-script or executable. There can be multiple callouts in the racg/usrco directory and all will be executed with the FAN payload as arguments. 
+The scripts are executed sequentially, so it is not recommended to have many scripts in this directory, 
+as they could place a load on the system that is not desired, and there may be timeliness issues if the scripts wait for scheduling.
+
+Create a second shell script on each node, in directory /u01/app/19.0.0.0/grid/racg/usrco/
+
+cat callout_elaborate.sh
+
+#!/usr/bin/bash
+    # Scan and parse HA event payload arguments:
+    #
+    # define AWK
+    AWK=/bin/awk
+    # Define a log file to see results
+    FAN_LOGFILE=/tmp/`hostname -s`.log
+    # Event type is handled differently
+    NOTIFY_EVENTTYPE=$1
+    for ARGS in $*; do
+        PROPERTY=`echo $ARGS | $AWK -F "=" '{print $1}'`
+        VALUE=`echo $ARGS | $AWK -F "=" '{print $2}'`
+        case $PROPERTY in
+          VERSION|version) NOTIFY_VERSION=$VALUE ;;
+          SERVICE|service) NOTIFY_SERVICE=$VALUE ;;
+          DATABASE|database) NOTIFY_DATABASE=$VALUE ;;
+          INSTANCE|instance) NOTIFY_INSTANCE=$VALUE ;;
+          HOST|host) NOTIFY_HOST=$VALUE ;;
+          STATUS|status) NOTIFY_STATUS=$VALUE ;;
+          REASON|reason) NOTIFY_REASON=$VALUE ;;
+          CARD|card) NOTIFY_CARDINALITY=$VALUE ;;
+          VIP_IPS|vip_ips) NOTIFY_VIPS=$VALUE ;; #VIP_IPS for public_nw_down
+          TIMESTAMP|timestamp) NOTIFY_LOGDATE=$VALUE ;; # catch event date
+          TIMEZONE|timezone) NOTIFY_TZONE=$VALUE ;;
+          ??:??:??) NOTIFY_LOGTIME=$PROPERTY ;; # catch event time (hh24:mi:ss)
+        esac
+    done
+
+    # FAN events with the following conditions will be inserted# into the critical trouble ticket system:
+    # NOTIFY_EVENTTYPE => SERVICE | DATABASE | NODE
+    # NOTIFY_STATUS => down | public_nw_down | nodedown
+    #
+    if (( [ "$NOTIFY_EVENTTYPE" = "SERVICE" ] ||[ "$NOTIFY_EVENTTYPE" = "DATABASE" ] || \
+        [ "$NOTIFY_EVENTTYPE" = "NODE" ] \
+        ) && \
+        ( [ "$NOTIFY_STATUS" = "down" ] || \
+        [ "$NOTIFY_STATUS" = "public_nw_down" ] || \
+        [ "$NOTIFY_STATUS" = "nodedown " ] ) \
+        ) ; then
+        # << CALL TROUBLE TICKET LOGGING PROGRAM AND PASS RELEVANT NOTIFY_* ARGUMENTS >>
+        echo "Create a service request as " ${NOTIFY_EVENTTYPE} " " ${NOTIFY_STATUS} " occured at " ${NOTIFY_LOGTIME} >> ${FAN_LOGFILE}
+    else
+        echo "Found no interesting event: " ${NOTIFY_EVENTTYPE} " " ${NOTIFY_STATUS} >> ${FAN_LOGFILE}
+    fi
+
+--- Stop the database !!!
+
+[grid@sduclunode1 usrco]$ srvctl stop database -d $(srvctl config database) -o immediate -force
+
+[grid@sduclunode1 usrco]$ srvctl status database -d $(srvctl config database)
+Instance SDURAC1 is not running on node sduclunode1
+Instance SDURAC2 is not running on node sduclunode2
+
+-- Review log file on /tmp !!!
+
+--- On node1:
+
+[grid@sduclunode1 usrco]$ ls -ltr /tmp/*.log | grep elaborate
+-rw-r--r-- 1 grid   oinstall  344 Jul  1 12:59 /tmp/sduclunode1_elaborate.log
+[grid@sduclunode1 usrco]$
+
+[grid@sduclunode1 usrco]$ cat /tmp/sduclunode1_elaborate.log
+Found no interesting event:  SERVICEMEMBER   down
+Create a service request as  SERVICE   down  occured at  12:59:13
+Found no interesting event:  SERVICEMEMBER   down
+Create a service request as  SERVICE   down  occured at  12:59:13
+Found no interesting event:  INSTANCE   down
+Create a service request as  DATABASE   down  occured at  12:59:49
+[grid@sduclunode1 usrco]$
+
+--- On node 2:
+
+[grid@sduclunode2 usrco]$ ls -ltr /tmp/*.log | grep elaborate
+-rw-r--r-- 1 grid oinstall  161 Jul  1 12:59 /tmp/sduclunode2_elaborate.log
+[grid@sduclunode2 usrco]$ cat /tmp/sduclunode2_elaborate.log
+Found no interesting event:  SERVICEMEMBER   down
+Create a service request as  SERVICE   down  occured at  12:59:13
+Found no interesting event:  INSTANCE   down
+[grid@sduclunode2 usrco]$
+
+--- Start the database and check the logs on both nodes !!!
+
+[grid@sduclunode1 usrco]$ srvctl start database -d $(srvctl config database)
+[grid@sduclunode1 usrco]$ srvctl status database -d $(srvctl config database)
+Instance SDURAC1 is running on node sduclunode1
+Instance SDURAC2 is running on node sduclunode2
+[grid@sduclunode1 usrco]$ cat /tmp/sduclunode1_elaborate.log
+Found no interesting event:  SERVICEMEMBER   down
+Create a service request as  SERVICE   down  occured at  12:59:13
+Found no interesting event:  SERVICEMEMBER   down
+Create a service request as  SERVICE   down  occured at  12:59:13
+Found no interesting event:  INSTANCE   down
+Create a service request as  DATABASE   down  occured at  12:59:49
+Found no interesting event:  INSTANCE   up
+[grid@sduclunode1 usrco]$
+
+[grid@sduclunode2 usrco]$ cat /tmp/sduclunode2_elaborate.log
+Found no interesting event:  SERVICEMEMBER   down
+Create a service request as  SERVICE   down  occured at  12:59:13
+Found no interesting event:  INSTANCE   down
+Found no interesting event:  INSTANCE   up
+Found no interesting event:  DATABASE   up
+Found no interesting event:  SERVICEMEMBER   up
+Found no interesting event:  SERVICE   up
+Found no interesting event:  SERVICE   up
+Found no interesting event:  SERVICEMEMBER   up
+Found no interesting event:  SERVICEMEMBER   up
+Found no interesting event:  SERVICE   up
+[grid@sduclunode2 usrco]$
+
+
+4. Client side FAN events
+*************************
+
+FAN events are sent to the application mid-tier or client tier using the Oracle Notification Service (ONS). ONS is configured automatically on the cluster when you install Grid Infrastructure. 
+CRS manages the stop and start of the ONS daemon.
+
+ONS is configured automatically by FAN-aware Oracle clients, which include Universal Connection Pool (UCP), ODP.Net, Weblogic Server with Active Gridlink, CMAN and others, 
+when a particular format connect string is used (for more information on this refer to the Application Continuity checklist: https://www.oracle.com//technetwork/database/clustering/checklist-ac-6676160.pdf)
+
+In order to determine if a client has received FAN events may require running your client in a debug fashion. This may be difficult to do and even more difficult to interpret.
+
+To confirm that FAN events are being received at a particular tier, you can install a java utility called FANWatcher, that will subscribe to ONS on a cluster and display events that it receives.
+
+--- We will install FANWatcher on node1 !!!
+
+--- As user oracle:
+
+mkdir -p /home/oracle/fANWatcher
+
+[oracle@sduclunode1 ~]$ cd /home/oracle/fANWatcher
+[oracle@sduclunode1 fANWatcher]$
+[oracle@sduclunode1 fANWatcher]$
+[oracle@sduclunode1 fANWatcher]$ pwd
+/home/oracle/fANWatcher
+
+-- Download FANWatcher with wget !!!
+
+[oracle@sduclunode1 fANWatcher]$ wget https://objectstorage.uk-london-1.oraclecloud.com/p/gKfwKKgzqSfL4A48e6lSKZYqyFdDzvu57md4B1MegMU/n/lrojildid9yx/b/labtest_bucket/o/fanWatcher_19c.zip
+--2021-07-01 13:10:02--  https://objectstorage.uk-london-1.oraclecloud.com/p/gKfwKKgzqSfL4A48e6lSKZYqyFdDzvu57md4B1MegMU/n/lrojildid9yx/b/labtest_bucket/o/fanWatcher_19c.zip
+Resolving objectstorage.uk-london-1.oraclecloud.com (objectstorage.uk-london-1.oraclecloud.com)... 134.70.56.1, 134.70.60.1, 134.70.64.1
+Connecting to objectstorage.uk-london-1.oraclecloud.com (objectstorage.uk-london-1.oraclecloud.com)|134.70.56.1|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 6116 (6.0K) [application/x-zip-compressed]
+Saving to: 'fanWatcher_19c.zip'
+
+100%[=================================================================================================>] 6,116       --.-K/s   in 0s
+
+2021-07-01 13:10:02 (78.1 MB/s) - 'fanWatcher_19c.zip' saved [6116/6116]
+
+-- Unzip FANWatcher !!!
+
+[oracle@sduclunode1 fANWatcher]$ unzip fanWatcher_19c.zip
+Archive:  fanWatcher_19c.zip
+  inflating: fanWatcher.bash
+  inflating: fanWatcher.class
+  inflating: fanWatcher.java
+[oracle@sduclunode1 fANWatcher]$ ls -ltr
+total 28
+-rw-r--r-- 1 oracle oinstall 6416 Jun 24  2020 fanWatcher.java
+-rw-r--r-- 1 oracle oinstall 5733 Jun 24  2020 fanWatcher.class
+-rw-r--r-- 1 oracle oinstall 6116 Aug 18  2020 fanWatcher_19c.zip
+-rw-r--r-- 1 oracle oinstall  905 Aug 18  2020 fanWatcher.bash
+[oracle@sduclunode1 fANWatcher]$
+
+--- For the database connection, I'll use:
+
+-- User: hr
+-- Password: AaZZ0r_cle#1
+-- Database service: noac
+-- Connect String: (DESCRIPTION=(CONNECT_TIMEOUT=90)(RETRY_COUNT=50)(RETRY_DELAY=3)(TRANSPORT_CONNECT_TIMEOUT=3)(ADDRESS_LIST=(ADDRESS=(PROTOCOL=tcp)(HOST=sduclunode-scan.sub06221433571.skynet.oraclevcn.com)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=noac.sub06221433571.skynet.oraclevcn.com)))
+
+[oracle@sduclunode1 fANWatcher]$ cat fanWatcher.bash
+#!/usr/bin/bash
+ORACLE_HOME=/u01/app/oracle/product/19.0.0.0/dbhome_1
+JAVA_HOME=${ORACLE_HOME}/jdk
+export ORACLE_HOME
+export JAVA_HOME
+# Set the credentials in the environment. If you don't like doing this,
+# hardcode them into the java program
+# Edit the values for password, url, user and CLASSPATH
+password=AaZZ0r_cle#1
+url='jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=sduclunode1.sub06221433571.skynet.oraclevcn.com)(PORT=1521))(ADDRESS=(PROTOCOL=TCP)(HOST=sduclunode2.sub06221433571.skynet.oraclevcn.com)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=noac.sub06221433571.skynet.oraclevcn.com)))'
+user=hr
+export password url user
+CLASSPATH="/u01/app/oracle/product/19.0.0.0/dbhome_1/jdbc/lib/ojdbc8.jar:/u01/app/oracle/product/19.0.0.0/dbhome_1/opmn/lib/ons.jar:."
+export CLASSPATH
+
+# Compile fanWatcher with the exported classpath
+#javac fanWatcher.java
+
+# Run fanwatcher with autoons
+${JAVA_HOME}/jre/bin/java fanWatcher autoons
+# EOF
+
+
+--- Run the bash script !!!
+chmod +x fanWatcher.bash
+
+[oracle@sduclunode1 fANWatcher]$ ./fanWatcher.bash
+Auto-ONS configuration=maxconnections.0001=0003
+nodes.0001=SDUCLUNODE1.SUB06221433571.SKYNET.ORACLEVCN.COM:6200
+maxconnections.0002=0003
+nodes.0002=SDUCLUNODE2.SUB06221433571.SKYNET.ORACLEVCN.COM:6200
+Opening FAN Subscriber Window ...
+
+
+--- From another terminal, kill smon process of instance 2 !!!
+
+[oracle@sduclunode2 ~]$ ps -ef | grep smon
+oracle   18581     1  0 13:02 ?        00:00:00 ora_smon_SDURAC2
+root     41364     1  1 Jun30 ?        00:20:15 /u01/app/19.0.0.0/grid/bin/osysmond.bin
+oracle   42272 42106  0 13:26 pts/0    00:00:00 grep --color=auto smon
+grid     46853     1  0 Jun30 ?        00:00:01 asm_smon_+ASM2
+[oracle@sduclunode2 ~]$ kill -9 18581
+
+--- FANWatcher catches the event !!!
+
+
+** Event Header **
+Notification Type: database/event/service
+Delivery Time: Thu Jul 01 13:26:53 UTC 2021
+Creation Time: Thu Jul 01 13:26:53 UTC 2021
+Generating Node: sduclunode2
+Event payload:
+VERSION=1.0 event_type=SERVICEMEMBER service=tac_service.sub06221433571.skynet.oraclevcn.com instance=SDURAC2 database=sdurac_dbsdu db_domain=sub06221433571.skynet.oraclevcn.com host=sduclunode2 status=down reason=FAILURE timestamp=2021-07-01 13:26:53 timezone=+00:00
+
+
+If fanWatcher can auto-configure with ONS and receive and display events, so can any client on the same tier. 
+This validates the communication path (no firewall blockage for example), and that FAN events are propagating correctly.

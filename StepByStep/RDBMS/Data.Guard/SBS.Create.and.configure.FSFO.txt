@@ -1,0 +1,729 @@
+References:
+***********
+https://docs.oracle.com/en/database/oracle/oracle-database/21/sbydb/
+https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&ved=2ahUKEwjg8qqvwtDxAhV6BWMBHYStBLkQFnoECAIQAw&url=https%3A%2F%2Fdocs.oracle.com%2Fen%2Fdatabase%2Foracle%2Foracle-database%2F20%2Fdgbkr%2Fusing-data-guard-broker-to-manage-switchovers-failovers.html&usg=AOvVaw3EAYf0nmgDUE4nnrl8fwPj
+https://docs.oracle.com/en/database/oracle/oracle-database/21/dgbkr/managing-oracle-data-guard-broker-configuration-members.html#GUID-E2C40F7E-8ACC-4A75-AAAA-52E54F39F488
+ORACLE 12.2 - Starting the Oracle Data Guard Broker OBSERVER in the BACKGROUND (Doc ID 2285158.1)
+
+a. Create Observer machines
+***************************
+
+Create 3 observer machines, one in each AD.
+Create a first machine in AD1, and deploy Oracle Client 21c.
+Then create a custom image and create two other machines from that image, in AD2 and AD3.
+These 3 machines will be deployed on the same private subnet as the primary and standby databases.
+
+--- On the first machine DGObserver1, create the "oracle" user.
+
+ssh -i /Users/stef/Documents/Preventa/TMP/sshkeybundle/privateKey opc@$(dameip TSEJumpHost)
+ssh -i ./.ssh/RAC_ssh-key-2021-06-23.key opc@dgobserver1.sub06221433571.skynet.oraclevcn.com
+
+sudo -i
+groupadd oinstall -g 1001
+useradd -m -g oinstall -d /home/oracle -s /bin/bash oracle
+
+--- Copy the oracle client distrib to /home/oracle !!!
+
+[root@dgobserver1 ~]# mv /home/opc/LINUX.X64_210000_client.zip /home/oracle
+[root@dgobserver1 ~]# chown oracle:oinstall /home/oracle/LINUX.X64_210000_client.zip
+
+[root@dgobserver1 ~]# su - oracle
+[oracle@dgobserver1 ~]$ pwd
+/home/oracle
+
+unzip LINUX.X64_210000_client.zip
+
+[oracle@dgobserver1 ~]$ cd client/
+[oracle@dgobserver1 client]$ ls -ltr
+total 24
+-rwxrwxr-x.  1 oracle oinstall  500 Feb  6  2013 welcome.html
+-rwxr-xr-x.  1 oracle oinstall 8854 Oct 31  2020 runInstaller
+drwxr-xr-x.  4 oracle oinstall 4096 Oct 31  2020 install
+drwxrwxr-x.  2 oracle oinstall   49 Oct 31  2020 response
+drwxr-xr-x. 15 oracle oinstall 4096 Oct 31  2020 stage
+[oracle@dgobserver1 client]$
+
+--- Install the client software !!!
+--- Prepare the directories for ORACLE_HOME, ORACLE_BASE and inventory !!!
+--- As root !!!
+[root@dgobserver1 ~]# mkdir /u01
+[root@dgobserver1 ~]# cd /u01
+[root@dgobserver1 u01]# mkdir app
+[root@dgobserver1 u01]# cd app
+[root@dgobserver1 app]# mkdir oracle
+[root@dgobserver1 app]# cd oracle
+[root@dgobserver1 oracle]# mkdir client
+[root@dgobserver1 oracle]# chown -R oracle:oinstall /u01
+
+
+
+--- Modify the response file in directory /home/oracle/client/response
+
+[oracle@dgobserver1 response]$ ls -ltr
+total 16
+-rw-rw-r--. 1 oracle oinstall 7957 Feb 12  2020 client_install.rsp
+-rwxrwxr-x. 1 oracle oinstall 6273 Jul  9  2020 netca.rsp
+
+[oracle@dgobserver1 response]$ cat client_install.rsp | grep -v "^#"
+
+
+oracle.install.responseFileVersion=/oracle/install/rspfmt_clientinstall_response_schema_v21.0.0
+
+UNIX_GROUP_NAME=oinstall
+INVENTORY_LOCATION=/u01/app/oracle
+ORACLE_HOME=/u01/app/oracle/client
+ORACLE_BASE=/u01/app/oracle
+oracle.install.client.installType=Administrator
+
+oracle.install.client.customComponents=
+
+oracle.install.client.schedulerAgentHostName=
+
+oracle.install.client.schedulerAgentPortNumber=
+
+oracle.install.client.drdaas.hostName=
+oracle.install.client.drdaas.mapName=
+oracle.install.client.drdaas.portNumber=
+oracle.install.client.drdaas.connectionDescriptor=
+
+--- Install the client with the response file !!!
+
+cd /home/oracle/client
+./runInstaller -silent -responseFile /home/oracle/client/response/client_install.rsp
+
+Starting Oracle Universal Installer...
+
+Checking Temp space: must be greater than 415 MB.   Actual 34074 MB    Passed
+Checking swap space: must be greater than 150 MB.   Actual 8191 MB    Passed
+Preparing to launch Oracle Universal Installer from /tmp/OraInstall2021-07-06_01-53-12PM. Please wait ...[oracle@dgobserver1 client]$ [WARNING] [INS-13014] Target environment does not meet some optional requirements.
+   CAUSE: Some of the optional prerequisites are not met. See logs for details. installActions2021-07-06_01-53-12PM.log
+   ACTION: Identify the list of failed prerequisite checks from the log: installActions2021-07-06_01-53-12PM.log. Then either from the log file or from installation manual find the appropriate configuration to meet the prerequisites and fix it manually.
+The response file for this session can be found at:
+ /u01/app/oracle/client/install/response/client_2021-07-06_01-53-12PM.rsp
+
+You can find the log of this install session at:
+ /tmp/OraInstall2021-07-06_01-53-12PM/installActions2021-07-06_01-53-12PM.log
+The installation of Oracle Client 21c was successful.
+Please check '/u01/app/oracle/logs/silentInstall2021-07-06_01-53-12PM.log' for more details.
+
+As a root user, execute the following script(s):
+	1. /u01/app/oracle/orainstRoot.sh
+
+
+
+Successfully Setup Software with warning(s).
+The log of this install session can be found at:
+ /u01/app/oracle/logs/installActions2021-07-06_01-53-12PM.log
+
+
+--- Run script as root:
+
+[root@dgobserver1 ~]# /u01/app/oracle/orainstRoot.sh
+Changing permissions of /u01/app/oracle.
+Adding read,write permissions for group.
+Removing read,write,execute permissions for world.
+
+Changing groupname of /u01/app/oracle to oinstall.
+The execution of the script is complete.
+
+--- Modify .bash_profile for user oracle
+
+# .bash_profile
+
+# Get the aliases and functions
+if [ -f ~/.bashrc ]; then
+        . ~/.bashrc
+fi
+
+# User specific environment and startup programs
+
+ORACLE_HOME=/u01/app/oracle/client
+ORACLE_BASE=/u01/app/oracle
+LD_LIBRARY_PATH=$ORACLE_HOME/lib
+PATH=$PATH:$HOME/.local/bin:$HOME/bin:$ORACLE_HOME/bin
+
+export PATH ORACLE_HOME ORACLE_BASE LD_LIBRARY_PATH
+~
+
+--- Check the path !!!
+
+[oracle@dgobserver1 ~]$ which dgmgrl
+/u01/app/oracle/client/bin/dgmgrl
+
+---- Create the connection to primary-standby databases in $ORACLE_HOME/network/admin !!!
+
+[oracle@dgobserver1 admin]$ cat /u01/app/oracle/client/network/admin/tnsnames.ora
+DBSDU_TSE=(DESCRIPTION=(SDU=65535)(SEND_BUF_SIZE=10485760)(RECV_BUF_SIZE=10485760)(ADDRESS=(PROTOCOL=TCP)(HOST=10.0.1.107)(PORT=1521))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=DBSDU_TSE.sub06221433571.skynet.oraclevcn.com)(UR=A)))
+DBSDU_FRA2BW=(DESCRIPTION=(SDU=65535)(SEND_BUF_SIZE=10485760)(RECV_BUF_SIZE=10485760)(ADDRESS=(PROTOCOL=TCP)(HOST=10.0.1.153)(PORT=1521))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=DBSDU_fra2bw.sub06221433571.skynet.oraclevcn.com)(UR=A)))
+[oracle@dgobserver1 admin]$
+
+--- Test the connections !!!
+[oracle@dgobserver1 admin]$ dgmgrl
+DGMGRL for Linux: Release 21.0.0.0.0 - Production on Wed Jul 7 07:57:45 2021
+Version 21.1.0.0.0
+
+Copyright (c) 1982, 2020, Oracle and/or its affiliates.  All rights reserved.
+
+Welcome to DGMGRL, type "help" for information.
+DGMGRL> connect sys/AaZZ0r_cle#1@DBSDU_TSE as sysdba
+Connected to "DBSDU_TSE"
+Connected as SYSDBA.
+DGMGRL> show configuration
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Protection Mode: MaxPerformance
+  Members:
+  DBSDU_TSE    - Primary database
+    DBSDU_fra2bw - Physical standby database
+
+Fast-Start Failover:  Disabled
+
+Configuration Status:
+SUCCESS   (status updated 10 seconds ago)
+
+DGMGRL>
+
+[oracle@dgobserver1 admin]$ dgmgrl
+DGMGRL for Linux: Release 21.0.0.0.0 - Production on Wed Jul 7 07:58:37 2021
+Version 21.1.0.0.0
+
+Copyright (c) 1982, 2020, Oracle and/or its affiliates.  All rights reserved.
+
+Welcome to DGMGRL, type "help" for information.
+DGMGRL> connect sys/AaZZ0r_cle#1@DBSDU_FRA2BW as sysdba
+Connected to "DBSDU_fra2bw"
+Connected as SYSDBA.
+DGMGRL> show configuration
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Protection Mode: MaxPerformance
+  Members:
+  DBSDU_TSE    - Primary database
+    DBSDU_fra2bw - Physical standby database
+
+Fast-Start Failover:  Disabled
+
+Configuration Status:
+SUCCESS   (status updated 56 seconds ago)
+
+=> OK !!!
+
+--- Enable fast-start failover !!!
+--- From any machine (Observer, primary, standby) !!!
+
+[oracle@dgobserver1 admin]$ dgmgrl
+DGMGRL for Linux: Release 21.0.0.0.0 - Production on Wed Jul 7 08:12:24 2021
+Version 21.1.0.0.0
+
+Copyright (c) 1982, 2020, Oracle and/or its affiliates.  All rights reserved.
+
+Welcome to DGMGRL, type "help" for information.
+DGMGRL> connect sys/AaZZ0r_cle#1@DBSDU_TSE as sysdba
+Connected to "DBSDU_TSE"
+Connected as SYSDBA.
+DGMGRL> ENABLE FAST_START FAILOVER
+Enabled in Potential Data Loss Mode.
+DGMGRL>
+
+
+DGMGRL> show configuration
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Protection Mode: MaxPerformance
+  Members:
+  DBSDU_TSE    - Primary database
+    Warning: ORA-16819: fast-start failover observer not started     <=============== Need to start an observer !!!
+
+    DBSDU_fra2bw - (*) Physical standby database
+      Warning: ORA-16819: fast-start failover observer not started
+
+Fast-Start Failover: Enabled in Potential Data Loss Mode        <========== Because Protection Mode: MaxPerformance !!!
+
+Configuration Status:
+WARNING   (status updated 36 seconds ago)
+
+DGMGRL>
+
+-- Check Observer connect string !!!
+
+DGMGRL> show database DBSDU_TSE 'DGConnectIdentifier'
+  DGConnectIdentifier = 'DBSDU_TSE'
+DGMGRL> show database DBSDU_fra2bw 'DGConnectIdentifier'
+  DGConnectIdentifier = 'DBSDU_fra2bw'
+DGMGRL>
+
+DGMGRL> edit database DBSDU_TSE set property 'ObserverConnectIdentifier'='DBSDU_TSE';
+Property "ObserverConnectIdentifier" updated
+DGMGRL>
+DGMGRL> show database DBSDU_TSE 'ObserverConnectIdentifier'
+  ObserverConnectIdentifier = 'DBSDU_TSE'
+DGMGRL>
+
+DGMGRL> edit database DBSDU_fra2bw set property 'ObserverConnectIdentifier'='DBSDU_fra2bw'
+> ;
+Property "ObserverConnectIdentifier" updated
+DGMGRL> show database DBSDU_fra2bw 'ObserverConnectIdentifier'
+  ObserverConnectIdentifier = 'DBSDU_fra2bw'
+DGMGRL>
+
+---- Before starting the observer in background, we need to configure a wallet, so that the observer can connect to both the prinary and the standby database !!!
+
+--- Configure Wallet from the OBSERVER host:
+
+mkdir –p /u01/app/oracle/wallet/
+[oracle@dgobserver1 wallet]$ mkstore -wrl /u01/app/oracle/wallet/ -create
+Oracle Secret Store Tool Release 21.0.0.0.0 - Production
+Version 21.0.0.0.0
+Copyright (c) 2004, 2020, Oracle and/or its affiliates. All rights reserved.
+
+Enter password:  AaZZ0r_cle#1
+Enter password again: AaZZ0r_cle#1
+[oracle@dgobserver1 wallet]$
+[oracle@dgobserver1 wallet]$
+[oracle@dgobserver1 wallet]$ ls -ltr
+total 8
+-rw-------. 1 oracle oinstall   0 Jul  7 10:06 ewallet.p12.lck
+-rw-------. 1 oracle oinstall 149 Jul  7 10:06 ewallet.p12
+-rw-------. 1 oracle oinstall   0 Jul  7 10:06 cwallet.sso.lck
+-rw-------. 1 oracle oinstall 194 Jul  7 10:06 cwallet.sso
+
+
+[oracle@dgobserver1 wallet]$ mkstore -wrl /u01/app/oracle/wallet/ -createCredential 'DBSDU_TSE' sys AaZZ0r_cle#1
+Oracle Secret Store Tool Release 21.0.0.0.0 - Production
+Version 21.0.0.0.0
+Copyright (c) 2004, 2020, Oracle and/or its affiliates. All rights reserved.
+
+Enter wallet password:
+[oracle@dgobserver1 wallet]$ mkstore -wrl /u01/app/oracle/wallet/ -createCredential 'DBSDU_fra2bw' sys AaZZ0r_cle#1
+Oracle Secret Store Tool Release 21.0.0.0.0 - Production
+Version 21.0.0.0.0
+Copyright (c) 2004, 2020, Oracle and/or its affiliates. All rights reserved.
+
+Enter wallet password:
+[oracle@dgobserver1 wallet]$
+[oracle@dgobserver1 wallet]$
+[oracle@dgobserver1 wallet]$ ls -ltr
+total 8
+-rw-------. 1 oracle oinstall   0 Jul  7 10:06 ewallet.p12.lck
+-rw-------. 1 oracle oinstall   0 Jul  7 10:06 cwallet.sso.lck
+-rw-------. 1 oracle oinstall 920 Jul  7 10:08 ewallet.p12
+-rw-------. 1 oracle oinstall 965 Jul  7 10:08 cwallet.sso
+[oracle@dgobserver1 wallet]$
+
+--- Configure an entry on sqlnet.ora
+
+NAMES.DIRECTORY_PATH= (TNSNAMES, ONAMES, HOSTNAME,EZCONNECT)
+WALLET_LOCATION=(SOURCE=(METHOD=FILE)(METHOD_DATA=(DIRECTORY=/u01/app/oracle/wallet/)))
+SQLNET.WALLET_OVERRIDE=TRUE
+
+[oracle@dgobserver1 wallet]$ cat /u01/app/oracle/client/network/admin/sqlnet.ora
+NAMES.DIRECTORY_PATH= (TNSNAMES, ONAMES, HOSTNAME,EZCONNECT)
+WALLET_LOCATION=(SOURCE=(METHOD=FILE)(METHOD_DATA=(DIRECTORY=/u01/app/oracle/wallet/)))
+SQLNET.WALLET_OVERRIDE=TRUE
+[oracle@dgobserver1 wallet]$
+
+
+
+---- From Observer machine, start the observer in background !!!
+
+[oracle@dgobserver1 ~]$ dgmgrl
+DGMGRL for Linux: Release 21.0.0.0.0 - Production on Wed Jul 7 09:24:49 2021
+Version 21.1.0.0.0
+
+Copyright (c) 1982, 2020, Oracle and/or its affiliates.  All rights reserved.
+
+Welcome to DGMGRL, type "help" for information.
+DGMGRL> connect sys/AaZZ0r_cle#1@DBSDU_TSE as sysdba
+Connected to "DBSDU_TSE"
+Connected as SYSDBA.
+
+DGMGRL> show observer
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Fast-Start Failover:     ENABLED
+
+No observers.
+
+DGMGRL>
+
+
+start observer dgobs1 in background file is '/u01/app/oracle/client/network/admin/fsfo.dat' logfile is '/u01/app/oracle/client/network/admin/observer_dgobs1.log' connect identifier is 'DBSDU_TSE' trace_level is SUPPORT;
+
+DGMGRL> start observer dgobs1 in background file is '/u01/app/oracle/client/network/admin/fsfo.dat' logfile is '/u01/app/oracle/client/network/admin/observer_dgobs1.log' connect identifier is 'DBSDU_TSE' trace_level is SUPPORT;
+Connected to "DBSDU_TSE"
+Submitted command "START OBSERVER" using connect identifier "DBSDU_TSE"
+DGMGRL> DGMGRL for Linux: Release 21.0.0.0.0 - Production on Wed Jul 7 10:13:07 2021
+Version 21.1.0.0.0
+
+Copyright (c) 1982, 2020, Oracle and/or its affiliates.  All rights reserved.
+
+Welcome to DGMGRL, type "help" for information.
+Connected to "DBSDU_TSE"
+Connected as SYSDBA.
+Succeeded in opening the observer file "/u01/app/oracle/client/network/admin/fsfo.dat".
+[W000 2021-07-07T10:13:10.229+00:00] Observer could not validate the contents of the observer file.
+[W000 2021-07-07T10:13:10.394+00:00] FSFO target standby is DBSDU_fra2bw
+Observer 'dgobs1' started
+The observer log file is '/u01/app/oracle/client/network/admin/observer_dgobs1.log'.
+
+DGMGRL>
+
+[oracle@dgobserver1 ~]$ tail -f /u01/app/oracle/client/network/admin/observer_dgobs1.log
+[W000 2021-07-07T10:15:04.843+00:00] Ping the primary database.
+[W000 2021-07-07T10:15:04.843+00:00] Sending command PING to thread P001
+[W000 2021-07-07T10:15:04.846+00:00] Command PING to thread P001 returned status=0
+[W000 2021-07-07T10:15:04.846+00:00] Command PING to thread S002 returned status=0
+[W000 2021-07-07T10:15:07.843+00:00] Ping the standby database.
+[W000 2021-07-07T10:15:07.843+00:00] Sending command PING to thread S002
+[W000 2021-07-07T10:15:07.843+00:00] Ping the primary database.
+[W000 2021-07-07T10:15:07.843+00:00] Sending command PING to thread P001
+[W000 2021-07-07T10:15:07.846+00:00] Command PING to thread P001 returned status=0
+[W000 2021-07-07T10:15:08.846+00:00] Command PING to thread S002 returned status=0
+[W000 2021-07-07T10:15:10.843+00:00] Ping the standby database.
+[W000 2021-07-07T10:15:10.843+00:00] Sending command PING to thread S002
+[W000 2021-07-07T10:15:10.843+00:00] Ping the primary database.
+[W000 2021-07-07T10:15:10.843+00:00] Sending command PING to thread P001
+[W000 2021-07-07T10:15:10.847+00:00] Command PING to thread P001 returned status=0
+[W000 2021-07-07T10:15:10.847+00:00] Command PING to thread S002 returned status=0
+[W000 2021-07-07T10:15:13.842+00:00] Ping the standby database.
+[W000 2021-07-07T10:15:13.842+00:00] Sending command PING to thread S002
+[W000 2021-07-07T10:15:13.842+00:00] Ping the primary database.
+[W000 2021-07-07T10:15:13.842+00:00] Sending command PING to thread P001
+[W000 2021-07-07T10:15:13.846+00:00] Command PING to thread P001 returned status=0
+[W000 2021-07-07T10:15:13.846+00:00] Command PING to thread S002 returned status=0
+[W000 2021-07-07T10:15:16.841+00:00] Ping the standby database.
+[W000 2021-07-07T10:15:16.842+00:00] Sending command PING to thread S002
+[W000 2021-07-07T10:15:16.842+00:00] Ping the primary database.
+[W000 2021-07-07T10:15:16.842+00:00] Sending command PING to thread P001
+[W000 2021-07-07T10:15:16.845+00:00] Command PING to thread P001 returned status=0
+[W000 2021-07-07T10:15:17.845+00:00] Command PING to thread S002 returned status=0
+
+[oracle@dgobserver1 ~]$ dgmgrl
+DGMGRL for Linux: Release 21.0.0.0.0 - Production on Wed Jul 7 10:15:34 2021
+Version 21.1.0.0.0
+
+Copyright (c) 1982, 2020, Oracle and/or its affiliates.  All rights reserved.
+
+Welcome to DGMGRL, type "help" for information.
+DGMGRL> connect sys/AaZZ0r_cle#1@DBSDU_TSE as sysdba
+Connected to "DBSDU_TSE"
+Connected as SYSDBA.
+DGMGRL> show observer
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Fast-Start Failover:     ENABLED
+
+  Primary:            DBSDU_TSE
+  Active Target:      DBSDU_fra2bw
+
+Observer "dgobs1" - Master
+
+  Host Name:                    dgobserver1
+  Last Ping to Primary:         0 seconds ago
+  Last Ping to Target:          4 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs1.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+DGMGRL>
+
+--- We stop the observer, and re-start it without trace_level=support, to avoid generating huge logfile !!!
+
+DGMGRL> stop observer
+Observer stopped.
+DGMGRL> show observer
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Fast-Start Failover:     ENABLED
+
+No observers.
+
+DGMGRL>
+
+start observer dgobs1 in background file is '/u01/app/oracle/client/network/admin/fsfo.dat' logfile is '/u01/app/oracle/client/network/admin/observer_dgobs1.log' connect identifier is 'DBSDU_TSE';
+
+DGMGRL> start observer dgobs1 in background file is '/u01/app/oracle/client/network/admin/fsfo.dat' logfile is '/u01/app/oracle/client/network/admin/observer_dgobs1.log' connect identifier is 'DBSDU_TSE';
+Connected to "DBSDU_TSE"
+Submitted command "START OBSERVER" using connect identifier "DBSDU_TSE"
+DGMGRL> DGMGRL for Linux: Release 21.0.0.0.0 - Production on Wed Jul 7 10:17:52 2021
+Version 21.1.0.0.0
+
+Copyright (c) 1982, 2020, Oracle and/or its affiliates.  All rights reserved.
+
+Welcome to DGMGRL, type "help" for information.
+Connected to "DBSDU_TSE"
+Connected as SYSDBA.
+Succeeded in opening the observer file "/u01/app/oracle/client/network/admin/fsfo.dat".
+[W000 2021-07-07T10:17:54.270+00:00] Observer could not validate the contents of the observer file.
+[W000 2021-07-07T10:17:54.412+00:00] FSFO target standby is DBSDU_fra2bw
+Observer 'dgobs1' started
+The observer log file is '/u01/app/oracle/client/network/admin/observer_dgobs1.log'.
+
+DGMGRL>
+
+DGMGRL> show observer
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Fast-Start Failover:     ENABLED
+
+  Primary:            DBSDU_TSE
+  Active Target:      DBSDU_fra2bw
+
+Observer "dgobs1" - Master      <====================== This observer is alone for now, hence it's the master observer. We will create two more observers, to ensure HA at observer level !!!
+
+  Host Name:                    dgobserver1
+  Last Ping to Primary:         0 seconds ago
+  Last Ping to Target:          3 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs1.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+DGMGRL> show configuration
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Protection Mode: MaxPerformance
+  Members:
+  DBSDU_TSE    - Primary database
+    DBSDU_fra2bw - (*) Physical standby database
+
+Fast-Start Failover: Enabled in Potential Data Loss Mode
+
+Configuration Status:
+SUCCESS   (status updated 35 seconds ago)
+
+DGMGRL>
+
+
+DGMGRL>
+
+[oracle@dgobserver1 ~]$ tail -f /u01/app/oracle/client/network/admin/observer_dgobs1.log
+[W000 2021-07-07T10:16:47.835+00:00] Releasing context of thread P001.
+2021-07-07T10:16:47.835+00:00
+Observer 'dgobs1' stopped
+Observer 'dgobs1' started
+[W000 2021-07-07T10:17:59.068+00:00] Observer trace level is set to USER
+[W000 2021-07-07T10:17:59.068+00:00] Try to connect to the primary.
+[W000 2021-07-07T10:17:59.068+00:00] Try to connect to the primary DBSDU_TSE.
+[W000 2021-07-07T10:17:59.092+00:00] The standby DBSDU_fra2bw is ready to be a FSFO target
+[W000 2021-07-07T10:18:02.067+00:00] Connection to the primary restored!
+[W000 2021-07-07T10:18:04.072+00:00] Disconnecting from database DBSDU_TSE.
+
+---- Create two more observers, to ensure HA !!!!
+---- Duplicate the observer1 machine (AD1) in AD2 and AD3
+---- We will use custom images to do that quickly !!!
+
+--- Now we start dgobs2 and dgobs3 !!!
+
+---- Start dgobs2 on dgobserver2.sub06221433571.skynet.oraclevcn.com !!!
+
+[opc@jumphost ~]$ ssh -i ./.ssh/RAC_ssh-key-2021-06-23.key opc@dgobserver2.sub06221433571.skynet.oraclevcn.com
+The authenticity of host 'dgobserver2.sub06221433571.skynet.oraclevcn.com (10.0.1.6)' can't be established.
+ECDSA key fingerprint is SHA256:zgslXXzkcufaUDujDcyixKdI7nAywVbeXa0CarDmgCs.
+ECDSA key fingerprint is MD5:98:9e:bb:a7:a0:18:70:83:7c:2b:8f:ef:c2:a9:14:e3.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added 'dgobserver2.sub06221433571.skynet.oraclevcn.com,10.0.1.6' (ECDSA) to the list of known hosts.
+Last login: Wed Jul  7 09:41:58 2021 from jumphost.sub06221433570.skynet.oraclevcn.com
+[opc@dgobserver2 ~]$
+[opc@dgobserver2 ~]$
+[opc@dgobserver2 ~]$ sudo -i
+[root@dgobserver2 ~]# su - oracle
+Last login: Wed Jul  7 09:42:03 GMT 2021 on pts/2
+[oracle@dgobserver2 ~]$ dgmgrl
+DGMGRL for Linux: Release 21.0.0.0.0 - Production on Wed Jul 7 10:56:45 2021
+Version 21.1.0.0.0
+
+Copyright (c) 1982, 2020, Oracle and/or its affiliates.  All rights reserved.
+
+Welcome to DGMGRL, type "help" for information.
+DGMGRL>
+
+DGMGRL> connect sys/AaZZ0r_cle#1@DBSDU_TSE as sysdba
+Connected to "DBSDU_TSE"
+Connected as SYSDBA.
+DGMGRL> show observer
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Fast-Start Failover:     ENABLED
+
+  Primary:            DBSDU_TSE
+  Active Target:      DBSDU_fra2bw
+
+Observer "dgobs1" - Master
+
+  Host Name:                    dgobserver1
+  Last Ping to Primary:         2 seconds ago
+  Last Ping to Target:          3 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs1.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+--- Start dbobs2 !!!
+start observer dgobs2 in background file is '/u01/app/oracle/client/network/admin/fsfo.dat' logfile is '/u01/app/oracle/client/network/admin/observer_dgobs2.log' connect identifier is 'DBSDU_TSE';
+
+
+DGMGRL> start observer dgobs2 in background file is '/u01/app/oracle/client/network/admin/fsfo.dat' logfile is '/u01/app/oracle/client/network/admin/observer_dgobs2.log' connect identifier is 'DBSDU_TSE';
+Connected to "DBSDU_TSE"
+Submitted command "START OBSERVER" using connect identifier "DBSDU_TSE"
+DGMGRL> DGMGRL for Linux: Release 21.0.0.0.0 - Production on Wed Jul 7 10:59:18 2021
+Version 21.1.0.0.0
+
+Copyright (c) 1982, 2020, Oracle and/or its affiliates.  All rights reserved.
+
+Welcome to DGMGRL, type "help" for information.
+Connected to "DBSDU_TSE"
+Connected as SYSDBA.
+Succeeded in opening the observer file "/u01/app/oracle/client/network/admin/fsfo.dat".
+[W000 2021-07-07T10:59:21.636+00:00] This observer is no longer registered with the configuration.
+[W000 2021-07-07T10:59:21.778+00:00] FSFO target standby is DBSDU_fra2bw
+Observer 'dgobs2' started
+The observer log file is '/u01/app/oracle/client/network/admin/observer_dgobs2.log'.
+
+DGMGRL>
+
+DGMGRL> show observer
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Fast-Start Failover:     ENABLED
+
+  Primary:            DBSDU_TSE
+  Active Target:      DBSDU_fra2bw
+
+Observer "dgobs1" - Master
+
+  Host Name:                    dgobserver1
+  Last Ping to Primary:         1 second ago
+  Last Ping to Target:          0 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs1.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+Observer "dgobs2" - Backup   <======= Observers act in active-passive mode !!!
+
+  Host Name:                    dgobserver2
+  Last Ping to Primary:         1 second ago
+  Last Ping to Target:          1 second ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs2.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+DGMGRL>
+
+--- Start dgobs3 !!!
+
+[opc@jumphost ~]$ ssh -i ./.ssh/RAC_ssh-key-2021-06-23.key opc@dgobserver3.sub06221433571.skynet.oraclevcn.com
+The authenticity of host 'dgobserver3.sub06221433571.skynet.oraclevcn.com (10.0.1.199)' can't be established.
+ECDSA key fingerprint is SHA256:zgslXXzkcufaUDujDcyixKdI7nAywVbeXa0CarDmgCs.
+ECDSA key fingerprint is MD5:98:9e:bb:a7:a0:18:70:83:7c:2b:8f:ef:c2:a9:14:e3.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added 'dgobserver3.sub06221433571.skynet.oraclevcn.com,10.0.1.199' (ECDSA) to the list of known hosts.
+Last login: Wed Jul  7 09:41:58 2021 from jumphost.sub06221433570.skynet.oraclevcn.com
+[opc@dgobserver3 ~]$
+[opc@dgobserver3 ~]$
+[opc@dgobserver3 ~]$
+[opc@dgobserver3 ~]$ sudo -i
+[root@dgobserver3 ~]# su - oracle
+Last login: Wed Jul  7 09:42:03 GMT 2021 on pts/2
+[oracle@dgobserver3 ~]$
+[oracle@dgobserver3 ~]$
+[oracle@dgobserver3 ~]$ screen -S DGOBSERVER3
+
+[oracle@dgobserver3 ~]$ dgmgrl
+DGMGRL for Linux: Release 21.0.0.0.0 - Production on Wed Jul 7 11:47:48 2021
+Version 21.1.0.0.0
+
+Copyright (c) 1982, 2020, Oracle and/or its affiliates.  All rights reserved.
+
+Welcome to DGMGRL, type "help" for information.
+DGMGRL> show observer
+not logged on
+DGMGRL> connect sys/AaZZ0r_cle#1@DBSDU_TSE as sysdba
+Connected to "DBSDU_TSE"
+Connected as SYSDBA.
+DGMGRL> show observer
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Fast-Start Failover:     ENABLED
+
+  Primary:            DBSDU_TSE
+  Active Target:      DBSDU_fra2bw
+
+Observer "dgobs1" - Master
+
+  Host Name:                    dgobserver1
+  Last Ping to Primary:         1 second ago
+  Last Ping to Target:          1 second ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs1.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+Observer "dgobs2" - Backup
+
+  Host Name:                    dgobserver2
+  Last Ping to Primary:         2 seconds ago
+  Last Ping to Target:          2 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs2.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+DGMGRL>
+
+DGMGRL> start observer dgobs3 in background file is '/u01/app/oracle/client/network/admin/fsfo.dat' logfile is '/u01/app/oracle/client/network/admin/observer_dgobs3.log' connect identifier is 'DBSDU_TSE';
+Connected to "DBSDU_TSE"
+Submitted command "START OBSERVER" using connect identifier "DBSDU_TSE"
+DGMGRL> DGMGRL for Linux: Release 21.0.0.0.0 - Production on Wed Jul 7 11:49:33 2021
+Version 21.1.0.0.0
+
+Copyright (c) 1982, 2020, Oracle and/or its affiliates.  All rights reserved.
+
+Welcome to DGMGRL, type "help" for information.
+Connected to "DBSDU_TSE"
+Connected as SYSDBA.
+Succeeded in opening the observer file "/u01/app/oracle/client/network/admin/fsfo.dat".
+[W000 2021-07-07T11:49:36.381+00:00] This observer is no longer registered with the configuration.
+[W000 2021-07-07T11:49:36.540+00:00] FSFO target standby is DBSDU_fra2bw
+Observer 'dgobs3' started
+The observer log file is '/u01/app/oracle/client/network/admin/observer_dgobs3.log'.
+
+DGMGRL>
+DGMGRL>
+DGMGRL> show observer
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Fast-Start Failover:     ENABLED
+
+  Primary:            DBSDU_TSE
+  Active Target:      DBSDU_fra2bw
+
+Observer "dgobs1" - Master
+
+  Host Name:                    dgobserver1
+  Last Ping to Primary:         1 second ago
+  Last Ping to Target:          1 second ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs1.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+Observer "dgobs2" - Backup
+
+  Host Name:                    dgobserver2
+  Last Ping to Primary:         2 seconds ago
+  Last Ping to Target:          1 second ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs2.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+Observer "dgobs3" - Backup
+
+  Host Name:                    dgobserver3
+  Last Ping to Primary:         2 seconds ago
+  Last Ping to Target:          1 second ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs3.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+DGMGRL>
+
+--- Now we have 3 observers, one master and two backup !!!
+

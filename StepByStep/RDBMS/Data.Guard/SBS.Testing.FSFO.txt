@@ -1,0 +1,514 @@
+--- We start from a FSFO configuration with 3 observers !!!
+--- dbobs1 is running in AD1
+--- dbobs2 is running in AD2
+--- dbobs3 is running in AD3
+
+DGMGRL> show observer
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Fast-Start Failover:     ENABLED
+
+  Primary:            DBSDU_TSE
+  Active Target:      DBSDU_fra2bw
+
+Observer "dgobs1" - Master
+
+  Host Name:                    dgobserver1
+  Last Ping to Primary:         1 second ago
+  Last Ping to Target:          1 second ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs1.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+Observer "dgobs2" - Backup
+
+  Host Name:                    dgobserver2
+  Last Ping to Primary:         1 second ago
+  Last Ping to Target:          2 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs2.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+Observer "dgobs3" - Backup
+
+  Host Name:                    dgobserver3
+  Last Ping to Primary:         1 second ago
+  Last Ping to Target:          2 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs3.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+DGMGRL>
+
+--- First test: Observer resilience
+--- We kill dgobs1
+
+[oracle@dgobserver1 ~]$ ps -ef | grep dgmgrl
+oracle    4762     1  0 10:54 ?        00:00:07 /u01/app/oracle/client/bin/dgmgrl             START OBSERVER dgobs1 FILE IS '/u01/app/oracle/client/network/admin/fsfo.dat' LOGFILE IS '/u01/app/oracle/client/network/admin/observer_dgobs1.log'
+oracle   30379  2967  0 12:29 pts/1    00:00:00 grep --color=auto dgmgrl
+[oracle@dgobserver1 ~]$
+
+kill -9 4762
+
+[oracle@dgobserver1 ~]$ ps -ef | grep dgmgrl
+oracle   30532  2967  0 12:30 pts/1    00:00:00 grep --color=auto dgmgrl
+
+--- From dgmgrl on dgobserver3:
+
+DGMGRL> show observer
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Fast-Start Failover:     ENABLED
+
+  Primary:            DBSDU_TSE
+  Active Target:      DBSDU_fra2bw
+
+Observer "dgobs2" - Master
+
+  Host Name:                    dgobserver2
+  Last Ping to Primary:         2 seconds ago
+  Last Ping to Target:          3 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs2.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+Observer "dgobs1" - Backup
+
+  Host Name:                    dgobserver1
+  Last Ping to Primary:         49 seconds ago
+  Last Ping to Target:          50 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs1.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+Observer "dgobs3" - Backup
+
+  Host Name:                    dgobserver3
+  Last Ping to Primary:         2 seconds ago
+  Last Ping to Target:          3 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs3.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+DGMGRL>
+
+-- dgobs2 took the master role
+-- dgobs3 is still backup
+-- dgobs1 is now backup, not pinging the databases as it has been killed !!!
+
+--- Now we will start dgobs1 again !!!
+
+[oracle@dgobserver1 ~]$ dgmgrl
+DGMGRL for Linux: Release 21.0.0.0.0 - Production on Wed Jul 7 12:33:25 2021
+Version 21.1.0.0.0
+
+Copyright (c) 1982, 2020, Oracle and/or its affiliates.  All rights reserved.
+
+Welcome to DGMGRL, type "help" for information.
+DGMGRL> connect sys/AaZZ0r_cle#1@DBSDU_TSE as sysdba
+Connected to "DBSDU_TSE"
+Connected as SYSDBA.
+DGMGRL> start observer dgobs1 in background file is '/u01/app/oracle/client/network/admin/fsfo.dat' logfile is '/u01/app/oracle/client/network/admin/observer_dgobs1.log' connect identifier is 'DBSDU_TSE';
+Connected to "DBSDU_TSE"
+Submitted command "START OBSERVER" using connect identifier "DBSDU_TSE"
+DGMGRL> DGMGRL for Linux: Release 21.0.0.0.0 - Production on Wed Jul 7 12:35:31 2021
+Version 21.1.0.0.0
+
+Copyright (c) 1982, 2020, Oracle and/or its affiliates.  All rights reserved.
+
+Welcome to DGMGRL, type "help" for information.
+Connected to "DBSDU_TSE"
+Connected as SYSDBA.
+Succeeded in opening the observer file "/u01/app/oracle/client/network/admin/fsfo.dat".
+Observer 'dgobs1' started
+The observer log file is '/u01/app/oracle/client/network/admin/observer_dgobs1.log'.
+
+DGMGRL>
+
+--- Check the observers again !!!
+
+DGMGRL> show observer
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Fast-Start Failover:     ENABLED
+
+  Primary:            DBSDU_TSE
+  Active Target:      DBSDU_fra2bw
+
+Observer "dgobs2" - Master
+
+  Host Name:                    dgobserver2
+  Last Ping to Primary:         3 seconds ago
+  Last Ping to Target:          2 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs2.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+Observer "dgobs1" - Backup
+
+  Host Name:                    dgobserver1
+  Last Ping to Primary:         2 seconds ago
+  Last Ping to Target:          1 second ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs1.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+Observer "dgobs3" - Backup
+
+  Host Name:                    dgobserver3
+  Last Ping to Primary:         3 seconds ago
+  Last Ping to Target:          2 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs3.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+DGMGRL>
+
+=> dgobs1 stays as backup, but now it is pinging the databases successfully !!!
+
+--- Now we will shutdown abort the primary database, and see what happens !!!
+
+[oracle@dbcn ~]$ srvctl status database -d $(srvctl config database)
+Instance DBSDU is running on node dbcn
+[oracle@dbcn ~]$ sqlplus / as sysdba
+
+SQL*Plus: Release 21.0.0.0.0 - Production on Wed Jul 7 13:06:44 2021
+Version 21.1.0.0.0
+
+Copyright (c) 1982, 2020, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 21c EE Extreme Perf Release 21.0.0.0.0 - Production
+Version 21.1.0.0.0
+
+SQL> select open_mode, database_role from v$database;
+
+OPEN_MODE	     DATABASE_ROLE
+-------------------- ----------------
+READ WRITE	     PRIMARY
+
+SQL>
+
+[oracle@dbcn ~]$ srvctl stop database -d $(srvctl config database) -o abort
+[oracle@dbcn ~]$ srvctl status database -d $(srvctl config database)
+Instance DBSDU is not running on node dbcn
+[oracle@dbcn ~]$
+
+
+DGMGRL> show observer
+ORA-03113: end-of-file on communication channel
+Process ID: 86606
+Session ID: 222 Serial number: 54428
+
+Configuration details cannot be determined by DGMGRL
+DGMGRL>
+
+---- Connect dgmgrl to the former standby !!!
+
+DGMGRL> connect sys/AaZZ0r_cle#1@DBSDU_fra2bw as sysdba
+Connected to "DBSDU_fra2bw"
+Connected as SYSDBA.
+DGMGRL> show configuration
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Protection Mode: MaxPerformance
+  Members:
+  DBSDU_fra2bw - Primary database
+    Warning: ORA-16824: multiple warnings, including fast-start failover-related warnings, detected for the database
+
+    DBSDU_TSE    - (*) Physical standby database (disabled)
+      ORA-16661: the standby database needs to be reinstated
+
+Fast-Start Failover: Enabled in Potential Data Loss Mode
+
+Configuration Status:
+WARNING   (status updated 6 seconds ago)
+
+DGMGRL>
+
+DGMGRL> show observer
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Fast-Start Failover:     ENABLED
+
+  Primary:            DBSDU_fra2bw
+  Active Target:      DBSDU_TSE
+
+Observer "dgobs2" - Master
+
+  Host Name:                    dgobserver2
+  Last Ping to Primary:         2 seconds ago
+  Last Ping to Target:          100 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs2.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+Observer "dgobs1" - Backup
+
+  Host Name:                    dgobserver1
+  Last Ping to Primary:         0 seconds ago
+  Last Ping to Target:          100 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs1.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+Observer "dgobs3" - Backup
+
+  Host Name:                    dgobserver3
+  Last Ping to Primary:         3 seconds ago
+  Last Ping to Target:          100 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs3.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+DGMGRL>
+
+DGMGRL> show configuration
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Protection Mode: MaxPerformance
+  Members:
+  DBSDU_fra2bw - Primary database
+    Warning: ORA-16824: multiple warnings, including fast-start failover-related warnings, detected for the database
+
+    DBSDU_TSE    - (*) Physical standby database (disabled)
+      ORA-16661: the standby database needs to be reinstated
+
+Fast-Start Failover: Enabled in Potential Data Loss Mode
+
+Configuration Status:
+WARNING   (status updated 44 seconds ago)
+
+DGMGRL> show database DBSDU_fra2bw
+
+Database - DBSDU_fra2bw
+
+  Role:                PRIMARY
+  Intended State:      TRANSPORT-ON
+  Instance(s):
+    DBSDU
+
+  Database Warning(s):
+    ORA-16829: fast-start failover configuration is lagging
+    ORA-16869: fast-start failover target not initialized
+
+Database Status:
+WARNING
+
+DGMGRL>
+
+---- FSFO did a failover !!!
+
+---- After a while we start the former primary again ...
+---  Hoping that an automatic re-instate will occur !!!
+
+[oracle@dbcn ~]$ srvctl start database -d $(srvctl config database)
+[oracle@dbcn ~]$ srvctl status database -d $(srvctl config database)
+Instance DBSDU is running on node dbcn
+[oracle@dbcn ~]$
+
+DGMGRL> connect sys/AaZZ0r_cle#1@DBSDU_fra2bw as sysdba
+Connected to "DBSDU_fra2bw"
+Connected as SYSDBA.
+DGMGRL> show configuration
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Protection Mode: MaxPerformance
+  Members:
+  DBSDU_fra2bw - Primary database
+    Error: ORA-16825: multiple errors or warnings, including fast-start failover-related errors or warnings, detected for the database
+
+    DBSDU_TSE    - (*) Physical standby database
+      Warning: ORA-16657: reinstatement of database in progress
+
+Fast-Start Failover: Enabled in Potential Data Loss Mode
+
+Configuration Status:
+ERROR   (status updated 56 seconds ago)
+
+DGMGRL>
+
+DGMGRL> show observer
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Fast-Start Failover:     ENABLED
+
+  Primary:            DBSDU_fra2bw
+  Active Target:      DBSDU_TSE
+
+Observer "dgobs2" - Master
+
+  Host Name:                    dgobserver2
+  Last Ping to Primary:         1 second ago
+  Last Ping to Target:          15 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs2.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+Observer "dgobs1" - Backup
+
+  Host Name:                    dgobserver1
+  Last Ping to Primary:         3 seconds ago
+  Last Ping to Target:          0 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs1.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+Observer "dgobs3" - Backup
+
+  Host Name:                    dgobserver3
+  Last Ping to Primary:         2 seconds ago
+  Last Ping to Target:          0 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs3.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+DGMGRL>
+
+---- The configuration changes with time !!!
+
+DGMGRL> show configuration
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Protection Mode: MaxPerformance
+  Members:
+  DBSDU_fra2bw - Primary database
+    Warning: ORA-16829: fast-start failover configuration is lagging
+
+    DBSDU_TSE    - (*) Physical standby database
+      Warning: ORA-16809: multiple warnings detected for the member
+
+Fast-Start Failover: Enabled in Potential Data Loss Mode
+
+Configuration Status:
+WARNING   (status updated 10 seconds ago)
+
+DGMGRL>
+
+---- Eventually the configuration is properly recreated automatically !!!
+
+DGMGRL> show configuration
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Protection Mode: MaxPerformance
+  Members:
+  DBSDU_fra2bw - Primary database
+    DBSDU_TSE    - (*) Physical standby database
+
+Fast-Start Failover: Enabled in Potential Data Loss Mode
+
+Configuration Status:
+SUCCESS   (status updated 37 seconds ago)
+
+DGMGRL>
+
+DGMGRL> show observer
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Fast-Start Failover:     ENABLED
+
+  Primary:            DBSDU_fra2bw
+  Active Target:      DBSDU_TSE
+
+Observer "dgobs2" - Master
+
+  Host Name:                    dgobserver2
+  Last Ping to Primary:         2 seconds ago
+  Last Ping to Target:          1 second ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs2.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+Observer "dgobs1" - Backup
+
+  Host Name:                    dgobserver1
+  Last Ping to Primary:         1 second ago
+  Last Ping to Target:          2 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs1.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+Observer "dgobs3" - Backup
+
+  Host Name:                    dgobserver3
+  Last Ping to Primary:         2 seconds ago
+  Last Ping to Target:          3 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs3.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+DGMGRL>
+
+--- Optionnally, we can run a switchback to go back to the original configuration !!!
+
+DGMGRL> switchover to DBSDU_TSE
+2021-07-07T13:23:08.410+00:00
+Performing switchover NOW, please wait...
+
+2021-07-07T13:23:10.242+00:00
+Operation requires a connection to database "DBSDU_TSE"
+Connecting ...
+Connected to "DBSDU_TSE"
+Connected as SYSDBA.
+
+2021-07-07T13:23:10.754+00:00
+Continuing with the switchover...
+
+2021-07-07T13:23:54.027+00:00
+New primary database "DBSDU_TSE" is opening...
+
+2021-07-07T13:23:54.027+00:00
+Oracle Clusterware is restarting database "DBSDU_fra2bw" ...
+Connected to "DBSDU_fra2bw"
+Connected to "DBSDU_fra2bw"
+2021-07-07T13:24:58.166+00:00
+Switchover succeeded, new primary is "dbsdu_tse"
+
+2021-07-07T13:24:58.170+00:00
+Switchover processing complete, broker ready.
+
+DGMGRL> show observer
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Fast-Start Failover:     ENABLED
+
+  Primary:            DBSDU_TSE
+  Active Target:      DBSDU_fra2bw
+
+Observer "dgobs2" - Master
+
+  Host Name:                    dgobserver2
+  Last Ping to Primary:         2 seconds ago
+  Last Ping to Target:          2 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs2.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+Observer "dgobs1" - Backup
+
+  Host Name:                    dgobserver1
+  Last Ping to Primary:         3 seconds ago
+  Last Ping to Target:          0 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs1.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+Observer "dgobs3" - Backup
+
+  Host Name:                    dgobserver3
+  Last Ping to Primary:         1 second ago
+  Last Ping to Target:          2 seconds ago
+  Log File:                     /u01/app/oracle/client/network/admin/observer_dgobs3.log
+  State File:                   /u01/app/oracle/client/network/admin/fsfo.dat
+
+DGMGRL>
+
+DGMGRL> show configuration
+
+Configuration - DBSDU_TSE_DBSDU_fra2bw
+
+  Protection Mode: MaxPerformance
+  Members:
+  DBSDU_TSE    - Primary database
+    DBSDU_fra2bw - (*) Physical standby database
+
+Fast-Start Failover: Enabled in Potential Data Loss Mode
+
+Configuration Status:
+SUCCESS   (status updated 37 seconds ago)
+
+DGMGRL>
+

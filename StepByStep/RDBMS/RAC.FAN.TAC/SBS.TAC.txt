@@ -1,0 +1,848 @@
+REF. https://apexapps.oracle.com/pls/apex/dbpm/r/livelabs/workshop-attendee-2?p210_workshop_id=801&p210_type=3&session=108321420218751
+
+
+STEP1: Create RAC DBSystem
+**************************
+
+ssh -i /Users/stef/Documents/Preventa/TMP/sshkeybundle/privateKey opc@$(dameip TSEJumpHost)
+ssh -i ./.ssh/RAC_ssh-key-2021-06-23.key opc@sduclunode1.sub06221433571.skynet.oraclevcn.com
+sudo -i
+su - oracle
+
+--- Connection tests !!!
+
+sqlplus system/AaZZ0r_cle#1@"(DESCRIPTION=(CONNECT_TIMEOUT=90)(RETRY_COUNT=50)(RETRY_DELAY=3)(TRANSPORT_CONNECT_TIMEOUT=3)(ADDRESS_LIST=(ADDRESS=(PROTOCOL=tcp)(HOST=sduclunode-scan.sub06221433571.skynet.oraclevcn.com)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=noac.sub06221433571.skynet.oraclevcn.com)))"
+
+SQL> select INSTANCE_NAME from v$instance;
+
+INSTANCE_NAME
+----------------
+SDURAC1
+
+
+
+SCAN name: sduclunode-scan.sub06221433571.skynet.oraclevcn.com
+Node1:
+    name: sduclunode1
+    VIP:  10.0.1.155
+    IP:   10.0.1.76
+
+Node2:
+    name: sduclunode2.sub06221433571.skynet.oraclevcn.com
+    VIP:  10.0.1.211
+    IP:   10.0.1.218
+
+SQL> show pdbs
+
+    CON_ID CON_NAME			  OPEN MODE  RESTRICTED
+---------- ------------------------------ ---------- ----------
+	 2 PDB$SEED			  READ ONLY  NO
+	 3 SDUPDB			  READ WRITE NO
+
+
+
+
+STEP 2: Examine Service Attributes and Program Settings
+*******************************************************
+
+
+[oracle@sduclunode1 acdemo]$ srvctl status service -d `srvctl config database`
+Service ac_service is running on instance(s) SDURAC1
+Service noac is running on instance(s) SDURAC1
+Service tac_service is running on instance(s) SDURAC1
+
+[oracle@sduclunode1 acdemo]$ srvctl config service -d $(srvctl config database) -s noac
+Service name: noac
+Server pool:
+Cardinality: 1
+Service role: PRIMARY
+Management policy: AUTOMATIC
+DTP transaction: false
+AQ HA notifications: false
+Global: false
+Commit Outcome: false
+Failover type: NONE
+Failover method:
+Failover retries:
+Failover delay:
+Failover restore: NONE
+Connection Load Balancing Goal: LONG
+Runtime Load Balancing Goal: NONE
+TAF policy specification: NONE
+Edition:
+Pluggable database name: SDUPDB
+Hub service:
+Maximum lag time: ANY
+SQL Translation Profile:
+Retention: 86400 seconds
+Replay Initiation Time: 300 seconds
+Drain timeout:
+Stop option:
+Session State Consistency: DYNAMIC
+GSM Flags: 0
+Service is enabled
+Preferred instances: SDURAC1
+Available instances: SDURAC2
+CSS critical: no
+Service uses Java: false
+
+[oracle@sduclunode1 acdemo]$ srvctl config service -d $(srvctl config database) -s tac_service
+Service name: tac_service
+Server pool:
+Cardinality: 1
+Service role: PRIMARY
+Management policy: AUTOMATIC
+DTP transaction: false
+AQ HA notifications: false
+Global: false
+Commit Outcome: true
+Failover type: AUTO
+Failover method:
+Failover retries: 30
+Failover delay: 10
+Failover restore: AUTO
+Connection Load Balancing Goal: LONG
+Runtime Load Balancing Goal: NONE
+TAF policy specification: NONE
+Edition:
+Pluggable database name: SDUPDB
+Hub service:
+Maximum lag time: ANY
+SQL Translation Profile:
+Retention: 86400 seconds
+Replay Initiation Time: 300 seconds
+Drain timeout:
+Stop option:
+Session State Consistency: AUTO
+GSM Flags: 0
+Service is enabled
+Preferred instances: SDURAC1
+Available instances: SDURAC2
+CSS critical: no
+Service uses Java: false
+
+To enable TAC commit_outcome is TRUE, failovertype is set to AUTO, and failover_restore is AUTO
+
+Note: The attributes failoverretry and failoverdelay are not required when RETRY_COUNT and RETRY_DELAY are set in the connect string\/URL as recommended
+
+STEP3: run the app in NOREPLAY mode
+***********************************
+
+[oracle@sduclunode1 acdemo]$ cat ac_noreplay.properties
+#Stub file to build ac_noreplay.properties
+# Use vanilla datasource
+datasource=oracle.jdbc.pool.OracleDataSource
+
+# Set verbose mode
+VERBOSE=FALSE
+
+# database JDBC URL
+url=jdbc:oracle:thin:@(DESCRIPTION=(CONNECT_TIMEOUT=90)(RETRY_COUNT=50)(RETRY_DELAY=3)(TRANSPORT_CONNECT_TIMEOUT=3)(ADDRESS_LIST=(ADDRESS=(PROTOCOL=tcp)(HOST=sduclunode-scan.sub06221433571.skynet.oraclevcn.com)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=noac.sub06221433571.skynet.oraclevcn.com)))
+
+# database username and password
+username=hr
+password=AaZZ0r_cle#1
+
+# Disable FAN
+fastConnectionFailover=FALSE
+
+#Disable connection tests
+validateConnectionOnBorrow=FALSE
+
+# number of connections in the UCP's pool
+ucp_pool_size=20
+
+#Connection Wait Timeout for busy pool
+connectionWaitTimeout=5
+
+# number of active threads (this simulates concurrent load)
+number_of_threads=10
+
+# think time is how much time the threads will sleep before looping
+thread_think_time=50
+~
+
+
+STEP 4: run the app with no Replay
+**********************************
+
+[oracle@sduclunode1 acdemo]$ ./runnoreplay
+######################################################
+Connecting to jdbc:oracle:thin:@(DESCRIPTION=(CONNECT_TIMEOUT=90)(RETRY_COUNT=50)(RETRY_DELAY=3)(TRANSPORT_CONNECT_TIMEOUT=3)(ADDRESS_LIST=(ADDRESS=(PROTOCOL=tcp)(HOST=sduclunode-scan.sub06221433571.skynet.oraclevcn.com)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=noac.sub06221433571.skynet.oraclevcn.com)))
+ # of Threads             : 10
+ UCP pool size            : 20
+FCF Enabled:  false
+VCoB Enabled: false
+ONS Configuration:  null
+Thread think time        : 50 ms
+######################################################
+
+Starting the pool now... (please wait)
+Pool is started in 4828ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 673, avg response time from db 11ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 2378, avg response time from db 6ms
+2 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 3249, avg response time from db 4ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 4114, avg response time from db 4ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 4970, avg response time from db 5ms
+0 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 5831, avg response time from db 5ms
+
+--- Kill SMON of the instance where noac service is currently running:
+
+[oracle@sduclunode1 ~]$ srvctl status service -d `srvctl config database` -s noac
+Service noac is running on instance(s) SDURAC1
+
+As noac service is running on instance SDURAC1, go to node1 and kill smon process:
+
+[oracle@sduclunode1 ~]$ ps -ef | grep smon
+oracle    8250  7389  0 07:47 pts/1    00:00:00 grep --color=auto smon
+oracle   18123     1  0 Jun30 ?        00:00:02 ora_smon_SDURAC1
+root     43502     1  1 Jun30 ?        00:17:15 /u01/app/19.0.0.0/grid/bin/osysmond.bin
+grid     60799     1  0 Jun30 ?        00:00:01 asm_smon_+ASM1
+
+[oracle@sduclunode1 ~]$ kill -9 18123
+
+	at oracle.jdbc.driver.T4CPreparedStatement.executeInternal(T4CPreparedStatement.java:1426)
+	at oracle.jdbc.driver.OraclePreparedStatement.executeQuery(OraclePreparedStatement.java:3713)
+	at oracle.jdbc.driver.OraclePreparedStatementWrapper.executeQuery(OraclePreparedStatementWrapper.java:1167)
+	at oracle.ucp.jdbc.proxy.oracle$1ucp$1jdbc$1proxy$1oracle$1StatementProxy$2oracle$1jdbc$1internal$1OraclePreparedStatement$$$Proxy.executeQuery(Unknown Source)
+	at acdemo.Worker.databaseWorkload(Worker.java:55)
+	at acdemo.Worker.run(Worker.java:136)
+	at java.lang.Thread.run(Thread.java:748)
+Application error handling: attempting to get a new connection No more data to read from socket.
+FCF information:
+0 borrowed, 10 pending, 0ms getConnection wait, TotalBorrowed 36837, avg response time from db 12ms
+ Application driven connection retry succeeded
+ Application driven connection retry succeeded
+ Application driven connection retry succeeded
+ Application driven connection retry succeeded
+ Application driven connection retry succeeded
+ Application driven connection retry succeeded
+ Application driven connection retry succeeded
+ Application driven connection retry succeeded
+ Application driven connection retry succeeded
+ Application driven connection retry succeeded
+10 borrowed, 0 pending, 1ms getConnection wait, TotalBorrowed 36847
+1 borrowed, 0 pending, 1ms getConnection wait, TotalBorrowed 37140, avg response time from db 191ms
+2 borrowed, 0 pending, 1ms getConnection wait, TotalBorrowed 37876, avg response time from db 15ms
+3 borrowed, 0 pending, 1ms getConnection wait, TotalBorrowed 38645, avg response time from db 12ms
+1 borrowed, 0 pending, 1ms getConnection wait, TotalBorrowed 39473, avg response time from db 7ms
+
+=> Threads fail, and are the reconnected to node2, as noac service has been restarted on node2 !!!
+
+[oracle@sduclunode1 ~]$ srvctl status service -d `srvctl config database` -s noac
+Service noac is running on instance(s) SDURAC2
+
+STEP5: Application continuity
+*****************************
+
+[oracle@sduclunode1 acdemo]$ cat ac_replay.properties
+# Stub file to create ac_replay.properties
+# Use replay datasource
+datasource=oracle.jdbc.replay.OracleDataSourceImpl
+
+# Set verbose mode
+VERBOSE=FALSE
+
+# database JDBC URL
+url=jdbc:oracle:thin:@(DESCRIPTION=(CONNECT_TIMEOUT=90)(RETRY_COUNT=50)(RETRY_DELAY=3)(TRANSPORT_CONNECT_TIMEOUT=3)(ADDRESS_LIST=(ADDRESS=(PROTOCOL=tcp)(HOST=sduclunode-scan.sub06221433571.skynet.oraclevcn.com)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=ac_service.sub06221433571.skynet.oraclevcn.com)))
+
+# database username and password:
+username=hr
+password=AaZZ0r_cle#1
+
+# Enable FAN
+fastConnectionFailover=TRUE
+
+#Disable connection tests
+validateConnectionOnBorrow=TRUE
+
+# number of connections in the UCP's pool:
+ucp_pool_size=20
+
+#Connection Wait Timeout for busy pool
+connectionWaitTimeout=5
+
+# number of active threads (this simulates concurrent load):
+number_of_threads=10
+
+# think time is how much time the threads will sleep before looping:
+thread_think_time=50
+
+
+./runreplay
+
+######################################################
+Connecting to jdbc:oracle:thin:@(DESCRIPTION=(CONNECT_TIMEOUT=90)(RETRY_COUNT=50)(RETRY_DELAY=3)(TRANSPORT_CONNECT_TIMEOUT=3)(ADDRESS_LIST=(ADDRESS=(PROTOCOL=tcp)(HOST=sduclunode-scan.sub06221433571.skynet.oraclevcn.com)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=ac_service.sub06221433571.skynet.oraclevcn.com)))
+ # of Threads             : 10
+ UCP pool size            : 20
+FCF Enabled:  true
+VCoB Enabled: true
+ONS Configuration:  null
+Thread think time        : 50 ms
+######################################################
+
+Starting the pool now... (please wait)
+Pool is started in 5149ms
+0 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 597, avg response time from db 19ms
+
+--- Kill SMON of the instance where noac service is currently running:
+
+[oracle@sduclunode1 ~]$ srvctl status service -d `srvctl config database` -s ac_service
+Service ac_service is running on instance(s) SDURAC1
+[oracle@sduclunode1 ~]$
+
+[oracle@sduclunode1 ~]$ ps -ef | grep smon
+oracle    9480     1  0 07:48 ?        00:00:01 ora_smon_SDURAC1
+root     43502     1  1 Jun30 ?        00:18:52 /u01/app/19.0.0.0/grid/bin/osysmond.bin
+grid     60799     1  0 Jun30 ?        00:00:01 asm_smon_+ASM1
+oracle   98114 97604  0 09:24 pts/1    00:00:00 grep --color=auto smon
+[oracle@sduclunode1 ~]$ kill -9 9480
+
+--- No errors on the threads !!!
+
+Starting the pool now... (please wait)
+Pool is started in 5149ms
+0 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 597, avg response time from db 19ms
+3 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 1373, avg response time from db 10ms
+1 borrowed, 1 pending, 0ms getConnection wait, TotalBorrowed 2228, avg response time from db 5ms
+2 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 3066, avg response time from db 6ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 3914, avg response time from db 5ms
+0 borrowed, 1 pending, 0ms getConnection wait, TotalBorrowed 4769, avg response time from db 5ms
+0 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 5621, avg response time from db 5ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 6426, avg response time from db 8ms
+0 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 7272, avg response time from db 5ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 8100, avg response time from db 7ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 8928, avg response time from db 7ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 9761, avg response time from db 7ms
+5 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 10584, avg response time from db 7ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 11409, avg response time from db 7ms
+0 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 12256, avg response time from db 6ms
+3 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 13113, avg response time from db 5ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 13966, avg response time from db 5ms
+0 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 14822, avg response time from db 5ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 15680, avg response time from db 5ms
+2 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 16490, avg response time from db 8ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 17332, avg response time from db 6ms
+2 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 18183, avg response time from db 5ms
+4 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 19042, avg response time from db 5ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 19902, avg response time from db 5ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 20536, avg response time from db 25ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 21391, avg response time from db 5ms
+0 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 22219, avg response time from db 7ms
+10 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 22473, avg response time from db 5ms
+10 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 22473
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 23190, avg response time from db 133ms   <===== temporary increase in the response time !!!
+2 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 23965, avg response time from db 10ms
+3 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 24689, avg response time from db 15ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 25480, avg response time from db 9ms
+4 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 26283, avg response time from db 8ms
+2 borrowed, 1 pending, 0ms getConnection wait, TotalBorrowed 27071, avg response time from db 9ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 27864, avg response time from db 9ms
+0 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 28661, avg response time from db 9ms
+
+-- The service has been relocated to node2:
+
+[oracle@sduclunode1 ~]$ srvctl status service -d `srvctl config database` -s ac_service
+Service ac_service is running on instance(s) SDURAC2
+[oracle@sduclunode1 ~]$
+
+STEP6: TAC
+**********
+
+[oracle@sduclunode1 acdemo]$ cat tac_replay.properties
+# Stub file to create tac_replay.properties
+# Use replay datasource
+datasource=oracle.jdbc.replay.OracleDataSourceImpl
+
+# Set verbose mode
+VERBOSE=FALSE
+
+# database JDBC URL
+url=jdbc:oracle:thin:@(DESCRIPTION=(CONNECT_TIMEOUT=90)(RETRY_COUNT=50)(RETRY_DELAY=3)(TRANSPORT_CONNECT_TIMEOUT=3)(ADDRESS_LIST=(ADDRESS=(PROTOCOL=tcp)(HOST=sduclunode-scan.sub06221433571.skynet.oraclevcn.com)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=tac_service.sub06221433571.skynet.oraclevcn.com)))
+
+# database username and password:
+username=hr
+password=AaZZ0r_cle#1
+
+# Enable FAN
+fastConnectionFailover=TRUE
+
+#Disable connection tests
+validateConnectionOnBorrow=TRUE
+
+# number of connections in the UCP's pool:
+ucp_pool_size=20
+
+#Connection Wait Timeout for busy pool
+connectionWaitTimeout=5
+
+# number of active threads (this simulates concurrent load):
+number_of_threads=10
+
+# think time is how much time the threads will sleep before looping:
+thread_think_time=50
+
+
+[oracle@sduclunode1 acdemo]$ ./runtacreplay
+######################################################
+Connecting to jdbc:oracle:thin:@(DESCRIPTION=(CONNECT_TIMEOUT=90)(RETRY_COUNT=50)(RETRY_DELAY=3)(TRANSPORT_CONNECT_TIMEOUT=3)(ADDRESS_LIST=(ADDRESS=(PROTOCOL=tcp)(HOST=sduclunode-scan.sub06221433571.skynet.oraclevcn.com)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=tac_service.sub06221433571.skynet.oraclevcn.com)))
+ # of Threads             : 10
+ UCP pool size            : 20
+FCF Enabled:  true
+VCoB Enabled: true
+ONS Configuration:  null
+Thread think time        : 50 ms
+######################################################
+
+Starting the pool now... (please wait)
+Pool is started in 4503ms
+4 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 645, avg response time from db 15ms
+
+
+--- Kill smon !!!
+
+[oracle@sduclunode1 acdemo]$ srvctl status service -d `srvctl config database` -s tac_service
+Service tac_service is running on instance(s) SDURAC2
+
+[oracle@sduclunode2 ~]$ ps -ef | grep smon
+oracle   25091 24674  0 09:34 pts/0    00:00:00 grep --color=auto smon
+root     41364     1  1 Jun30 ?        00:16:52 /u01/app/19.0.0.0/grid/bin/osysmond.bin
+grid     46853     1  0 Jun30 ?        00:00:01 asm_smon_+ASM2
+oracle   73751     1  0 08:42 ?        00:00:01 ora_smon_SDURAC2
+[oracle@sduclunode2 ~]$ kill -9 73751
+
+[oracle@sduclunode2 ~]$ srvctl status service -d `srvctl config database` -s tac_service
+Service tac_service is running on instance(s) SDURAC1
+[oracle@sduclunode2 ~]$
+
+--- No errors on the app !!!
+
+Starting the pool now... (please wait)
+Pool is started in 4503ms
+4 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 645, avg response time from db 15ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 1449, avg response time from db 8ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 2268, avg response time from db 7ms
+2 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 3083, avg response time from db 8ms
+4 borrowed, 1 pending, 0ms getConnection wait, TotalBorrowed 3891, avg response time from db 8ms
+2 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 4699, avg response time from db 8ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 5511, avg response time from db 8ms
+0 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 6310, avg response time from db 9ms
+2 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 7134, avg response time from db 7ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 7957, avg response time from db 7ms
+3 borrowed, 1 pending, 0ms getConnection wait, TotalBorrowed 8759, avg response time from db 8ms
+2 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 9582, avg response time from db 7ms
+2 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 10409, avg response time from db 7ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 11214, avg response time from db 8ms
+1 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 12037, avg response time from db 7ms
+2 borrowed, 1 pending, 0ms getConnection wait, TotalBorrowed 12860, avg response time from db 7ms
+0 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 13659, avg response time from db 9ms
+3 borrowed, 2 pending, 0ms getConnection wait, TotalBorrowed 14382, avg response time from db 16ms
+3 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 15157, avg response time from db 11ms
+3 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 15929, avg response time from db 11ms
+4 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 16725, avg response time from db 9ms
+5 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 17521, avg response time from db 9ms
+3 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 18318, avg response time from db 9ms
+10 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 18846, avg response time from db 10ms
+0 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 18919, avg response time from db 753ms   <==== temporary increase of the response time !!!
+2 borrowed, 0 pending, 0ms getConnection wait, TotalBorrowed 19659, avg response time from db 14ms
+2 borrowed, 1 pending, 0ms getConnection wait, TotalBorrowed 20492, avg response time from db 6ms
+
+---- This was a demo of unplanned outage !!!
+---- The following is a demo of planned outage !!!
+---- We will relocate the database service and drain the sessions !!!
+
+[oracle@sduclunode1 acdemo]$ ./runtacreplay
+######################################################
+Connecting to jdbc:oracle:thin:@(DESCRIPTION=(CONNECT_TIMEOUT=90)(RETRY_COUNT=50)(RETRY_DELAY=3)(TRANSPORT_CONNECT_TIMEOUT=3)(ADDRESS_LIST=(ADDRESS=(PROTOCOL=tcp)(HOST=sduclunode-scan.sub06221433571.skynet.oraclevcn.com)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=tac_service.sub06221433571.skynet.oraclevcn.com)))
+ # of Threads             : 10
+ UCP pool size            : 20
+FCF Enabled:  true
+VCoB Enabled: true
+ONS Configuration:  null
+Thread think time        : 50 ms
+######################################################
+
+Starting the pool now... (please wait)
+Pool is started in 4006ms
+2 borrowed, 1 pending, 0ms getConnection wait, TotalBorrowed 736, avg response time from db 7ms
+
+
+
+
+--- From another terminal, relocate the service:
+
+srvctl relocate service -d $(srvctl config database) -s tac_service -drain_timeout 120 -oldinst SDURAC1 -newinst SDURAC2
+
+[oracle@sduclunode1 ~]$ srvctl status service -d $(srvctl config database) -s tac_service
+Service tac_service is running on instance(s) SDURAC2
+
+sqlplus sys/AaZZ0r_cle#1@"(DESCRIPTION=(CONNECT_TIMEOUT=90)(RETRY_COUNT=50)(RETRY_DELAY=3)(TRANSPORT_CONNECT_TIMEOUT=3)(ADDRESS_LIST=(ADDRESS=(PROTOCOL=tcp)(HOST=sduclunode-scan.sub06221433571.skynet.oraclevcn.com)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=tac_service.sub06221433571.skynet.oraclevcn.com)))" as sysdba
+
+SQL> select INST_ID, count(*) from gv$session where username = 'HR' group by inst_id;
+
+   INST_ID   COUNT(*)
+---------- ----------
+	 2	   20
+
+
+=> No temporary response time increase observed !!!
+
+--- TAC will protect any app, regardless if they are using a connection pool !!!
+--- Example with Sql*Plus !!!
+
+--- Connect to tac_service, and do an update !!!
+
+SQL> select instance_name from v$instance;
+
+INSTANCE_NAME
+----------------
+SDURAC1
+
+SQL> select empno, ename  from emp4ac where rownum < 10;
+
+     EMPNO ENAME
+---------- ----------
+     -8004 Bob-8004
+     -7826 Bob-7826
+     -3479 Bob-3479
+     -5641 Bob-5641
+     -8732 Bob-8732
+      8513 Bob8513
+      9247 Bob9247
+      6207 Bob6207
+       249 Bob249
+
+9 rows selected.
+
+
+SQL> update emp4ac set empno=8504 where empno=9999 and ename='Bob8504' and rownum < 10;
+
+1 row updated.
+
+
+
+--- Transaction is left uncommitted on purpose !!!
+
+--- Kill SMON to crash the instance where the session is connected !!!
+
+[oracle@sduclunode1 ~]$ srvctl status service -d `srvctl config database` -s tac_service
+Service tac_service is running on instance(s) SDURAC1
+[oracle@sduclunode1 ~]$ ps -ef | grep smon
+oracle   23299 22859  0 09:44 pts/1    00:00:00 grep --color=auto smon
+root     43502     1  1 Jun30 ?        00:19:14 /u01/app/19.0.0.0/grid/bin/osysmond.bin
+grid     60799     1  0 Jun30 ?        00:00:01 asm_smon_+ASM1
+oracle   99359     1  0 09:24 ?        00:00:00 ora_smon_SDURAC1
+[oracle@sduclunode1 ~]$ kill -9 99359
+[oracle@sduclunode1 ~]$
+[oracle@sduclunode1 ~]$
+[oracle@sduclunode1 ~]$
+[oracle@sduclunode1 ~]$
+[oracle@sduclunode1 ~]$
+[oracle@sduclunode1 ~]$ srvctl status service -d `srvctl config database` -s tac_service
+Service tac_service is running on instance(s) SDURAC2
+[oracle@sduclunode1 ~]$
+
+-- No error on the sql*plus session:
+--- The session is still pending commit !!!
+
+SQL> select instance_name from v$instance;
+
+INSTANCE_NAME
+----------------
+SDURAC2
+
+SQL> commit;
+
+Commit complete.
+
+SQL>
+
+--- TAC protects also against an explicit kill !!!
+
+--- Connect to tac_service through sql*plus !!!
+
+[oracle@sduclunode1 acdemo]$ sqlplus hr/AaZZ0r_cle#1@"(DESCRIPTION=(CONNECT_TIMEOUT=90)(RETRY_COUNT=50)(RETRY_DELAY=3)(TRANSPORT_CONNECT_TIMEOUT=3)(ADDRESS_LIST=(ADDRESS=(PROTOCOL=tcp)(HOST=sduclunode-scan.sub06221433571.skynet.oraclevcn.com)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=tac_service.sub06221433571.skynet.oraclevcn.com)))"
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Thu Jul 1 10:07:41 2021
+Version 19.11.0.0.0
+
+Copyright (c) 1982, 2020, Oracle.  All rights reserved.
+
+Last Successful login time: Thu Jul 01 2021 10:06:35 +00:00
+
+Connected to:
+Oracle Database 19c EE Extreme Perf Release 19.0.0.0.0 - Production
+Version 19.11.0.0.0
+
+SQL>
+
+SQL> select empno, ename  from emp4ac where rownum < 10;
+
+     EMPNO ENAME
+---------- ----------
+     -8004 Bob-8004
+     -7826 Bob-7826
+     -3479 Bob-3479
+     -5641 Bob-5641
+     -8732 Bob-8732
+      8513 Bob8513
+      9247 Bob9247
+      6207 Bob6207
+       249 JUSTO
+
+9 rows selected.
+
+SQL> select instance_name from v$instance;
+
+INSTANCE_NAME
+----------------
+SDURAC1
+
+SQL> select sid, serial# from v$session where sid=SYS_CONTEXT ('USERENV', 'SID');
+
+       SID    SERIAL#
+---------- ----------
+       331	20780
+
+SQL> update emp4ac set ename = 'JUSTE' where empno=249;
+
+1 row updated.
+
+SQL>
+
+-- Stay still, and kill the session from another terminal !!!
+
+[oracle@sduclunode1 acdemo]$ ./kill_session.sh tac_service.sub06221433571.skynet.oraclevcn.com
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Thu Jul 1 10:09:20 2021
+Version 19.11.0.0.0
+
+Copyright (c) 1982, 2020, Oracle.  All rights reserved.
+
+Last Successful login time: Thu Jul 01 2021 10:06:20 +00:00
+
+Connected to:
+Oracle Database 19c EE Extreme Perf Release 19.0.0.0.0 - Production
+Version 19.11.0.0.0
+
+SQL> SQL>
+'ALTERSYSTEMKILLSESSION'''||SID||','||SERIAL#||'''IMMEDIATE;'
+--------------------------------------------------------------------------------
+ALTER SYSTEM KILL SESSION '331,20780' IMMEDIATE;
+
+SQL> SQL> Disconnected from Oracle Database 19c EE Extreme Perf Release 19.0.0.0.0 - Production
+Version 19.11.0.0.0
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Thu Jul 1 10:09:21 2021
+Version 19.11.0.0.0
+
+Copyright (c) 1982, 2020, Oracle.  All rights reserved.
+
+Last Successful login time: Thu Jul 01 2021 10:09:21 +00:00
+
+Connected to:
+Oracle Database 19c EE Extreme Perf Release 19.0.0.0.0 - Production
+Version 19.11.0.0.0
+
+SQL>
+System altered.
+
+SQL> Disconnected from Oracle Database 19c EE Extreme Perf Release 19.0.0.0.0 - Production
+Version 19.11.0.0.0
+[oracle@sduclunode1 acdemo]$
+
+-- Go back to the sql*plus session !!!
+
+SQL> select instance_name from v$instance;
+
+INSTANCE_NAME
+----------------
+SDURAC1             <==== Still connected to instance 1, as it was not crashed !!!
+
+SQL> select sid, serial# from v$session where sid=SYS_CONTEXT ('USERENV', 'SID');
+
+       SID    SERIAL#
+---------- ----------
+       343	22210     <====== Session serial# changed, meaning my session was reconnected !!!
+
+SQL> commit;
+
+Commit complete.
+
+SQL>
+
+---- The same test with AC service fails !!!
+
+[oracle@sduclunode1 acdemo]$ sqlplus hr/AaZZ0r_cle#1@"(DESCRIPTION=(CONNECT_TIMEOUT=90)(RETRY_COUNT=50)(RETRY_DELAY=3)(TRANSPORT_CONNECT_TIMEOUT=3)(ADDRESS_LIST=(ADDRESS=(PROTOCOL=tcp)(HOST=sduclunode-scan.sub06221433571.skynet.oraclevcn.com)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=ac_service.sub06221433571.skynet.oraclevcn.com)))"
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Thu Jul 1 10:13:17 2021
+Version 19.11.0.0.0
+
+Copyright (c) 1982, 2020, Oracle.  All rights reserved.
+
+Last Successful login time: Thu Jul 01 2021 10:10:04 +00:00
+
+Connected to:
+Oracle Database 19c EE Extreme Perf Release 19.0.0.0.0 - Production
+Version 19.11.0.0.0
+
+SQL> select instance_name from v$instance;
+
+INSTANCE_NAME
+----------------
+SDURAC1
+
+SQL> select sid, serial# from v$session where sid=SYS_CONTEXT ('USERENV', 'SID');
+
+       SID    SERIAL#
+---------- ----------
+       343	20380
+
+SQL> select empno, ename  from emp4ac where rownum < 10;
+
+     EMPNO ENAME
+---------- ----------
+     -8004 Bob-8004
+     -7826 Bob-7826
+     -3479 Bob-3479
+     -5641 Bob-5641
+     -8732 Bob-8732
+      8513 Bob8513
+      9247 Bob9247
+      6207 Bob6207
+       249 JUSTE
+
+9 rows selected.
+
+SQL> update emp4ac set ENAME='JUSTO' where empno=249;
+
+1 row updated.
+
+SQL>
+
+--- From another terminal, kill the session !!!
+
+[oracle@sduclunode1 acdemo]$ ./kill_session.sh ac_service.sub06221433571.skynet.oraclevcn.com
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Thu Jul 1 10:14:57 2021
+Version 19.11.0.0.0
+
+Copyright (c) 1982, 2020, Oracle.  All rights reserved.
+
+Last Successful login time: Thu Jul 01 2021 10:09:21 +00:00
+
+Connected to:
+Oracle Database 19c EE Extreme Perf Release 19.0.0.0.0 - Production
+Version 19.11.0.0.0
+
+SQL> SQL>
+'ALTERSYSTEMKILLSESSION'''||SID||','||SERIAL#||'''IMMEDIATE;'
+--------------------------------------------------------------------------------
+ALTER SYSTEM KILL SESSION '343,20380' IMMEDIATE;
+
+SQL> SQL>
+Disconnected from Oracle Database 19c EE Extreme Perf Release 19.0.0.0.0 - Production
+Version 19.11.0.0.0
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Thu Jul 1 10:15:28 2021
+Version 19.11.0.0.0
+
+Copyright (c) 1982, 2020, Oracle.  All rights reserved.
+
+Last Successful login time: Thu Jul 01 2021 10:14:57 +00:00
+
+Connected to:
+Oracle Database 19c EE Extreme Perf Release 19.0.0.0.0 - Production
+Version 19.11.0.0.0
+
+SQL>
+System altered.
+
+SQL>
+Disconnected from Oracle Database 19c EE Extreme Perf Release 19.0.0.0.0 - Production
+Version 19.11.0.0.0
+
+--- Go back to the Sql*Plus session:
+
+SQL> select instance_name from v$instance;
+select instance_name from v$instance
+*
+ERROR at line 1:
+ORA-41412: results changed during replay; failover cannot continue
+
+
+SQL>
+
+As Sql*plus is not a pooled connectio, AC is not able to replay !!!
+
+
+----- Finally, we will show that TAC preserves the session context through replay !!!
+--- From Sql*Plus, we will insert a row with sysdate value, then abort the instance !!!
+--- Then we will commit, and observe that SYSDATE was maintained as it was !!!
+
+[oracle@sduclunode1 acdemo]$ sqlplus hr/AaZZ0r_cle#1@"(DESCRIPTION=(CONNECT_TIMEOUT=90)(RETRY_COUNT=50)(RETRY_DELAY=3)(TRANSPORT_CONNECT_TIMEOUT=3)(ADDRESS_LIST=(ADDRESS=(PROTOCOL=tcp)(HOST=sduclunode-scan.sub06221433571.skynet.oraclevcn.com)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=tac_service.sub06221433571.skynet.oraclevcn.com)))"
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Tue Jul 6 10:27:30 2021
+Version 19.11.0.0.0
+
+Copyright (c) 1982, 2020, Oracle.  All rights reserved.
+
+Last Successful login time: Tue Jul 06 2021 10:20:49 +00:00
+
+Connected to:
+Oracle Database 19c EE Extreme Perf Release 19.0.0.0.0 - Production
+Version 19.11.0.0.0
+
+SQL> select instance_name from v$instance;
+
+INSTANCE_NAME
+----------------
+SDURAC2
+
+SQL>
+
+SQL> insert into tt (c1,c2) values (1,sysdate);
+
+1 row created.
+
+SQL> select c1, to_char(c2,'DD/MM/YYYY HH24:MI:SS') from tt;
+
+	C1 TO_CHAR(C2,'DD/MM/Y
+---------- -------------------
+	 1 06/07/2021 10:28:29
+
+=> Transaction is left uncommitted for now !!!
+
+--- Now lets kill instance SDURAC2 !!! 
+--. From another terminal, kill SMON process for instance SDURAC2 !!!
+
+[oracle@sduclunode2 ~]$ ps -ef | grep smon
+root      6039     1  1 10:09 ?        00:00:21 /u01/app/19.0.0.0/grid/bin/osysmond.bin
+grid     13809     1  0 10:09 ?        00:00:00 asm_smon_+ASM2
+oracle   22652     1  0 10:12 ?        00:00:00 ora_smon_SDURAC2
+oracle   47473 47328  0 10:30 pts/0    00:00:00 grep --color=auto smon
+
+[oracle@sduclunode2 ~]$ kill -9 22652
+
+---- Let's go back to our Sql*Plus session, and commit our transaction !!!
+
+SQL> commit;
+
+Commit complete.
+
+SQL>
+
+SQL> select instance_name from v$instance;
+
+INSTANCE_NAME
+----------------
+SDURAC1                <===== Our session has been reconnected to SDURAC1 !!!
+
+
+SQL> select c1, to_char(c2,'DD/MM/YYYY HH24:MI:SS') from tt;
+
+	C1 TO_CHAR(C2,'DD/MM/Y
+---------- -------------------
+	 1 06/07/2021 10:28:29    <===== Despite the replay, session context has been preserved (in this case the original value of SYSDATE. Would work with sequences, bind variables, etc ...)
+
+SQL>
