@@ -1,0 +1,246 @@
+BEGIN
+LOOP 
+  ORA_KAFKA.NEXT_OFFSET('KV_KAFKACLU1_orakafkatestgroup_topic01_0'); 
+  
+  SELECT c1 
+  FROM KV_KAFKACLU1_orakafkatestgroup_topic01_0; 
+
+  ORA_KAFKA.UPDATE_OFFSET('KV_KAFKACLU1_orakafkatestgroup_topic01_0'); 
+
+  COMMIT; 
+END LOOP;
+END;
+/
+
+
+SQL> exec ORA_KAFKA.NEXT_OFFSET('KV_KAFKACLU1_ORAKAFKATESTGROUP_TOPIC01_0')
+
+PL/SQL procedure successfully completed.
+
+SQL> SELECT c1 
+  FROM KV_KAFKACLU1_orakafkatestgroup_topic01_0;  2  
+
+C1
+----------------------------------------------------------------------
+{ "cust_id": 1313131
+> { "cust_id": 3535353
+> { "cust_id": 7979797
+> { "cust_id": 7979797
+> { "cust_id": 3535353
+> { "cust_id": 7979797
+> { "cust_id": 1313131
+> { "cust_id": 3535353
+> { "cust_id": 1313131
+
+9 rows selected.
+
+SQL> exec ORA_KAFKA.UPDATE_OFFSET('KV_KAFKACLU1_ORAKAFKATESTGROUP_TOPIC01_0')
+
+PL/SQL procedure successfully completed.
+
+SQL> commit;
+
+Commit complete.
+
+
+******************************************************************************************
+****** Pruebas con el modo JSON **********************************************************
+******************************************************************************************
+
+--- Voy a construir una ETL que lee de los topics e inserta en una tabla que tiene un campo JSON y una clave.
+
+--- Primero creo un usuario donde creare la tabla:
+
+sqlplus sys/AaZZ0r_cle#1@ptrcn-9i4zy-scan:1521/pdbkafka.sub01161228411.skynet.oraclevcn.com as sysdba
+
+create bigfile tablespace TBS_FND datafile size 32G autoextend on maxsize 200G;
+
+create user FND_USER identified by "AaZZ0r_cle#1" default tablespace TBS_FND temporary tablespace TEMP;
+
+grant connect, resource to FND_USER;
+alter user FND_USER quota unlimited on TBS_FND;
+
+sqlplus FND_USER/AaZZ0r_cle#1@ptrcn-9i4zy-scan:1521/pdbkafka.sub01161228411.skynet.oraclevcn.com
+
+create table TOPIC01
+(
+id VARCHAR2(32),
+sales_record VARCHAR2(4000)
+);
+
+alter table TOPIC01 add constraint CK_SALES_RECORD_01 check (sales_record IS JSON);
+
+
+create table TOPIC02
+(
+id VARCHAR2(32),
+sales_record VARCHAR2(4000)
+);
+
+alter table TOPIC02 add constraint CK_SALES_RECORD_02 check (sales_record IS JSON);
+
+create table TOPIC03
+(
+id VARCHAR2(32),
+sales_record VARCHAR2(4000)
+);
+
+alter table TOPIC03 add constraint CK_SALES_RECORD_03 check (sales_record IS JSON);
+
+
+SQL> grant select, insert, update, delete on topic01 to KAFKA_USER;
+
+Grant succeeded.
+
+SQL> grant select, insert, update, delete on topic02 to KAFKA_USER;
+
+Grant succeeded.
+
+SQL> grant select, insert, update, delete on topic03 to KAFKA_USER;
+
+Grant succeeded.
+
+
+---- Pruebas de ETL:
+********************
+
+--- Cargo el topic01: por paquetes de 90 mensajes !!!
+
+echo '{ "cust_id": 11313131, "month": 12, "expenses": 1313.13 }
+{ "cust_id": 1135353, "month": 11, "expenses": 761.35 }
+{ "cust_id": 1179797, "month": 10, "expenses": 4489.00 }
+{ "cust_id": 1179797, "month": 11, "expenses": 18.72 }
+{ "cust_id": 1135353, "month": 10, "expenses": 6001.94 }
+{ "cust_id": 1179797, "month": 12, "expenses": 173.18 }
+{ "cust_id": 1113131, "month": 10, "expenses": 492.83 }
+{ "cust_id": 1135353, "month": 12, "expenses": 81.12 }
+{ "cust_id": 1113131, "month": 11, "expenses": 368.27 }
+{ "cust_id": 1135353, "month": 11, "expenses": 761.35 }
+{ "cust_id": 1179797, "month": 10, "expenses": 4489.00 }
+{ "cust_id": 1179797, "month": 11, "expenses": 18.72 }
+{ "cust_id": 1135353, "month": 10, "expenses": 6001.94 }
+{ "cust_id": 1179797, "month": 12, "expenses": 173.18 }
+{ "cust_id": 1113131, "month": 10, "expenses": 492.83 }
+{ "cust_id": 1135353, "month": 12, "expenses": 81.12 }
+{ "cust_id": 1113131, "month": 11, "expenses": 368.27 }
+{ "cust_id": 1135353, "month": 11, "expenses": 761.35 }
+{ "cust_id": 1179797, "month": 10, "expenses": 4489.00 }
+{ "cust_id": 1179797, "month": 11, "expenses": 18.72 }
+{ "cust_id": 1135353, "month": 10, "expenses": 6001.94 }
+{ "cust_id": 1179797, "month": 12, "expenses": 173.18 }
+{ "cust_id": 1113131, "month": 10, "expenses": 492.83 }
+{ "cust_id": 1135353, "month": 12, "expenses": 81.12 }
+{ "cust_id": 1113131, "month": 11, "expenses": 368.27 }
+{ "cust_id": 1135353, "month": 11, "expenses": 761.35 }
+{ "cust_id": 1179797, "month": 10, "expenses": 4489.00 }
+{ "cust_id": 1179797, "month": 11, "expenses": 18.72 }
+{ "cust_id": 1135353, "month": 10, "expenses": 6001.94 }
+{ "cust_id": 1179797, "month": 12, "expenses": 173.18 }
+{ "cust_id": 1113131, "month": 10, "expenses": 492.83 }
+{ "cust_id": 1135353, "month": 12, "expenses": 81.12 }
+{ "cust_id": 1113131, "month": 11, "expenses": 368.27 }
+{ "cust_id": 1135353, "month": 11, "expenses": 761.35 }
+{ "cust_id": 1179797, "month": 10, "expenses": 4489.00 }
+{ "cust_id": 1179797, "month": 11, "expenses": 18.72 }
+{ "cust_id": 1135353, "month": 10, "expenses": 6001.94 }
+{ "cust_id": 1179797, "month": 12, "expenses": 173.18 }
+{ "cust_id": 1113131, "month": 10, "expenses": 492.83 }
+{ "cust_id": 1135353, "month": 12, "expenses": 81.12 }
+{ "cust_id": 1113131, "month": 11, "expenses": 368.27 }
+{ "cust_id": 1135353, "month": 11, "expenses": 761.35 }
+{ "cust_id": 1179797, "month": 10, "expenses": 4489.00 }
+{ "cust_id": 1179797, "month": 11, "expenses": 18.72 }
+{ "cust_id": 1135353, "month": 10, "expenses": 6001.94 }
+{ "cust_id": 1179797, "month": 12, "expenses": 173.18 }
+{ "cust_id": 1113131, "month": 10, "expenses": 492.83 }
+{ "cust_id": 1135353, "month": 12, "expenses": 81.12 }
+{ "cust_id": 1113131, "month": 11, "expenses": 368.27 }
+{ "cust_id": 1135353, "month": 11, "expenses": 761.35 }
+{ "cust_id": 1179797, "month": 10, "expenses": 4489.00 }
+{ "cust_id": 1179797, "month": 11, "expenses": 18.72 }
+{ "cust_id": 1135353, "month": 10, "expenses": 6001.94 }
+{ "cust_id": 1179797, "month": 12, "expenses": 173.18 }
+{ "cust_id": 1113131, "month": 10, "expenses": 492.83 }
+{ "cust_id": 1135353, "month": 12, "expenses": 81.12 }
+{ "cust_id": 1113131, "month": 11, "expenses": 368.27 }
+{ "cust_id": 1135353, "month": 11, "expenses": 761.35 }
+{ "cust_id": 1179797, "month": 10, "expenses": 4489.00 }
+{ "cust_id": 1179797, "month": 11, "expenses": 18.72 }
+{ "cust_id": 1135353, "month": 10, "expenses": 6001.94 }
+{ "cust_id": 1179797, "month": 12, "expenses": 173.18 }
+{ "cust_id": 1113131, "month": 10, "expenses": 492.83 }
+{ "cust_id": 1135353, "month": 12, "expenses": 81.12 }
+{ "cust_id": 1113131, "month": 11, "expenses": 368.27 }
+{ "cust_id": 1135353, "month": 11, "expenses": 761.35 }
+{ "cust_id": 1179797, "month": 10, "expenses": 4489.00 }
+{ "cust_id": 1179797, "month": 11, "expenses": 18.72 }
+{ "cust_id": 1135353, "month": 10, "expenses": 6001.94 }
+{ "cust_id": 1179797, "month": 12, "expenses": 173.18 }
+{ "cust_id": 1113131, "month": 10, "expenses": 492.83 }
+{ "cust_id": 1135353, "month": 12, "expenses": 81.12 }
+{ "cust_id": 1113131, "month": 11, "expenses": 368.27 }
+{ "cust_id": 1135353, "month": 11, "expenses": 761.35 }
+{ "cust_id": 1179797, "month": 10, "expenses": 4489.00 }
+{ "cust_id": 1179797, "month": 11, "expenses": 18.72 }
+{ "cust_id": 1135353, "month": 10, "expenses": 6001.94 }
+{ "cust_id": 1179797, "month": 12, "expenses": 173.18 }
+{ "cust_id": 1113131, "month": 10, "expenses": 492.83 }
+{ "cust_id": 1135353, "month": 12, "expenses": 81.12 }
+{ "cust_id": 1113131, "month": 11, "expenses": 368.27 }
+{ "cust_id": 1135353, "month": 11, "expenses": 761.35 }
+{ "cust_id": 1179797, "month": 10, "expenses": 4489.00 }
+{ "cust_id": 1179797, "month": 11, "expenses": 18.72 }
+{ "cust_id": 1135353, "month": 10, "expenses": 6001.94 }
+{ "cust_id": 1179797, "month": 12, "expenses": 173.18 }
+{ "cust_id": 1113131, "month": 10, "expenses": 492.83 }
+{ "cust_id": 1135353, "month": 12, "expenses": 81.12 }
+{ "cust_id": 1113131, "month": 11, "expenses": 368.27 }
+' > /tmp/sample_data_topic01.json
+
+
+kafka-console-producer.sh \
+--broker-list localhost:9092 \
+--topic topic01 < /tmp/sample_data_topic01.json
+
+
+Lo lanzo desde SHELL:
+
+[oracle@ptrcn-9i4zy1 admin]$ cat KAFKA_ETL_FROM_TOPIC01.sh 
+#!/bin/sh
+ORACLE_UNQNAME=PTRDB_zrh1gh
+ORACLE_SID=PTRDB1
+ORACLE_HOSTNAME=ptrcn-9i4zy1.sub01161228411.skynet.oraclevcn.com
+ORACLE_BASE=/u02/app/oracle
+ORACLE_HOME=/u02/app/oracle/product/19.0.0.0/dbhome_2
+DIR_RAIZ="/home/oracle/INDITEX/admin"
+DIR_LOG=${DIR_RAIZ}/log
+fecha=$(date +%Y%m%d%H%M%S)
+LOGFILE=${DIR_LOG}/${fecha}"-"$(basename $0).log
+
+echo "Empieza la ETL "$(basename $0)" - "${fecha} >> ${LOGFILE}
+sqlplus KAFKA_USER/AaZZ0r_cle#1@ptrcn-9i4zy-scan:1521/pdbkafka.sub01161228411.skynet.oraclevcn.com << EOF | tee -a ${LOGFILE}
+
+exec ORA_KAFKA.NEXT_OFFSET('KV_KAFKACLU1_ORAKAFKATESTGROUP_TOPIC01_0')
+
+insert /*+ APPEND */ into FND_USER.TOPIC01 (id,sales_record)
+select sys_guid(), value  from KV_KAFKACLU1_orakafkatestgroup_topic01_0;
+
+exec ORA_KAFKA.UPDATE_OFFSET('KV_KAFKACLU1_ORAKAFKATESTGROUP_TOPIC01_0')
+commit;
+
+EOF
+
+echo "Termina la ETL "$(basename $0)" - "$(date +%Y%m%d%H%M%S) >> ${LOGFILE}
+
+exit 0
+
+
+
+
+
+
+
+
+
+
+

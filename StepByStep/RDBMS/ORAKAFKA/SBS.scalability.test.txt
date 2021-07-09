@@ -1,0 +1,346 @@
+Plan de pruebas:
+****************
+
+	- N topics en KAFKA
+	- N procesos de ETL en el EXA, balanceados por SCAN
+	- En los topics de KAFKA se insertan mensajes por paquetes de 1000 mensajes, 1000 mensajes cada 15s.
+	- Las ETL se disparan cada 15s
+	- La prueba la dejo correr 10mn => cada ETL deberia cargar aprox. 40.000 mensajes
+	- Empiezo por N=3, hasta N=?
+
+Mediciones:
+***********
+	- vmstat en la VM de Kafka
+	- vmstat en los dos nodos de Exadata
+	- AWR de cada instancia durante los 10mn
+
+Codigo ejecutado en el docker KAFKA (spin-on-topic.sh):
+*******************************************************
+
+#!/bin/sh
+
+tlimit=$1
+tsleep=$2
+numtopic=$3
+
+for t in `seq ${tlimit}`
+do
+	for i in `seq -f "%02g" ${numtopic}`
+	do
+		nohup kafka-console-producer.sh \
+		--broker-list localhost:9092 \
+		--topic topic${i} < /tmp/sample_data_topic${i}.json &
+	done
+	### Go to sleep tsleep s
+	sleep ${tsleep}
+done
+
+exit 0
+
+#### Dentro del docker:
+cd /tmp
+./spin-on-topic.sh 40 15 3
+
+
+Codigo ejecutado en el EXADATA (exec-kafka-etl.sh):
+***************************************************
+
+#!/bin/sh
+
+tlimit=$1
+tsleep=$2
+numtopic=$3
+
+for t in `seq ${tlimit}`
+do
+	for i in `seq -f "%02g" ${numtopic}`
+	do
+		nohup /home/oracle/INDITEX/admin/KAFKA_ETL_FROM_TOPIC${i}.sh &
+	done
+	### Go to sleep tsleep s
+	sleep ${tsleep}
+done
+
+exit 0
+
+### Dentro del EXA:
+cd /home/oracle/INDITEX/admin
+snap
+./exec-kafka-etl.sh 40 15 3
+snap
+
+
+Prueba 1:
+*********
+
+N=3
+tlimit=40
+tsleep=15
+numtopic=3
+
+CPU on Exa: max 5% en nodo1
+CPU on KAFKAINST: picos de 45%
+
+AWR: KAFKA_3TOPIC_awrrpt_1_855_856.txt
+
+Top 10 Foreground Events by Total Wait Time
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                                           Total Wait       Avg   % DB Wait
+Event                                Waits Time (sec)      Wait   time Class
+------------------------------ ----------- ---------- --------- ------ --------
+external table read                    375      208.9  556.97ms   57.8 User I/O
+DB CPU                                           94.4             26.1
+Failed Logon Delay                      11         11 1000.08ms    3.0 Other
+Sync ASM rebalance                   2,477        5.8    2.34ms    1.6 Other
+cursor: pin S wait on X                108        5.7   52.51ms    1.6 Concurre
+ASM file metadata operation            417        1.9    4.62ms     .5 Other
+PX Deq: Join ACK                     4,498        1.5  333.11us     .4 Other
+library cache: mutex X                 567        1.4    2.52ms     .4 Concurre
+Disk file Mirror Read                1,042        1.3    1.26ms     .4 User I/O
+external table open                    600        1.3    2.09ms     .3 User I/O
+
+Prueba 2:
+*********
+
+N=10
+tlimit=40
+tsleep=15
+numtopic=10
+
+##### Preparación del entorno #####
+
+Truncar las tablas en el EXA:
+
+[oracle@ptrcn-9i4zy1 admin]$ sqlplus FND_USER/AaZZ0r_cle#1@ptrcn-9i4zy-scan:1521/pdbkafka.sub01161228411.skynet.oraclevcn.com
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Wed Feb 19 10:00:01 2020
+Version 19.5.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+Last Successful login time: Sat Feb 15 2020 11:20:59 +00:00
+
+Connected to:
+Oracle Database 19c EE Extreme Perf Release 19.0.0.0.0 - Production
+Version 19.5.0.0.0
+
+SQL> truncate table FND_USER.TOPIC01;
+
+Table truncated.
+
+SQL> truncate table FND_USER.TOPIC02;
+
+Table truncated.
+
+SQL> truncate table FND_USER.TOPIC03;
+
+Table truncated.
+
+#### Crear 7 tablas adicionales en al EXA:
+
+TOPIC04 a TOPIC10
+
+grant select, insert, update, delete on topic04 to KAFKA_USER;
+grant select, insert, update, delete on topic05 to KAFKA_USER;
+grant select, insert, update, delete on topic06 to KAFKA_USER;
+grant select, insert, update, delete on topic07 to KAFKA_USER;
+grant select, insert, update, delete on topic08 to KAFKA_USER;
+grant select, insert, update, delete on topic09 to KAFKA_USER;
+grant select, insert, update, delete on topic10 to KAFKA_USER;
+
+### Crear 7 scripts adicionales de ETL en el EXADATA:
+
+-rwxr-xr-x 1 oracle oinstall    913 Feb 19 10:21 KAFKA_ETL_FROM_TOPIC04.sh
+-rwxr-xr-x 1 oracle oinstall    913 Feb 19 10:21 KAFKA_ETL_FROM_TOPIC05.sh
+-rwxr-xr-x 1 oracle oinstall    913 Feb 19 10:22 KAFKA_ETL_FROM_TOPIC06.sh
+-rwxr-xr-x 1 oracle oinstall    913 Feb 19 10:22 KAFKA_ETL_FROM_TOPIC07.sh
+-rwxr-xr-x 1 oracle oinstall    913 Feb 19 10:22 KAFKA_ETL_FROM_TOPIC08.sh
+-rwxr-xr-x 1 oracle oinstall    913 Feb 19 10:23 KAFKA_ETL_FROM_TOPIC09.sh
+-rwxr-xr-x 1 oracle oinstall    913 Feb 19 10:23 KAFKA_ETL_FROM_TOPIC10.sh
+
+
+#### Crear 7 topics adicionales en KAFKA:
+
+#### Desde fuera del docker !!!
+
+for i in `seq -f "%02g" 4 10`
+do
+	docker run -it --rm \
+	    --network kafka-net \
+	    -e KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper-server:2181 \
+	    bitnami/kafka:latest kafka-topics.sh --create  --zookeeper zookeeper-server:2181 --replication-factor 1 --partitions 3 \
+	--topic topic${i} 
+done
+
+### Dentro del docker genera más ficheros JSON, uno por topic adicional !!!
+
+I have no name!@2b3787150456:/$ cd /tmp
+I have no name!@2b3787150456:/tmp$ ls -ltr
+total 1600
+-rw-r--r--. 1 root root 921741 Jan 26 00:16 render-template.zip
+-rwxr-xr-x. 1 root root   2394 Feb 13 17:00 ppl
+-rw-r--r--. 1 1001 root  55490 Feb 13 17:23 sample_data_topic01.json
+-rw-r--r--. 1 root root     28 Feb 14 15:26 oli.txt
+-rw-r--r--. 1 1001 root  55490 Feb 19 09:28 sample_data_topic02.json
+-rw-r--r--. 1 1001 root  55490 Feb 19 09:28 sample_data_topic03.json
+-rw-r--r--. 1 1001 root  55490 Feb 19 09:28 sample_data_topic04.json
+-rw-r--r--. 1 1001 root  55490 Feb 19 09:28 sample_data_topic05.json
+-rw-r--r--. 1 1001 root  55490 Feb 19 09:29 sample_data_topic06.json
+-rw-r--r--. 1 1001 root  55490 Feb 19 09:29 sample_data_topic07.json
+-rw-r--r--. 1 1001 root  55490 Feb 19 09:29 sample_data_topic08.json
+-rw-r--r--. 1 1001 root  55490 Feb 19 09:29 sample_data_topic09.json
+-rw-r--r--. 1 1001 root  55490 Feb 19 09:29 sample_data_topic10.json
+-rwxr-xr-x. 1 root root    301 Feb 19 09:34 spin-on-topic.sh
+-rw-------. 1 1001 root 120122 Feb 19 09:50 nohup.out
+
+#### Instalar 7 topics adicionales en ora_kafka !!!
+
+DECLARE
+v_views_created INTEGER;
+v_application_id VARCHAR2(128);
+BEGIN
+ORA_KAFKA.CREATE_VIEWS('KAFKACLU1','orakafkatestgroup','topic04',ORA_KAFKA.TOPIC_FORMAT_JSON_VARCHAR2,'ORAKAFKA_VARCHAR2_REF_TABLE',
+v_views_created,v_application_id, 1, TRUE, '');
+dbms_output.put_line('View created = ' || v_views_created);
+dbms_output.put_line('Application id = ' || v_application_id);
+dbms_output.put_line('Created views for topic04');
+END;
+/
+
+DECLARE
+v_views_created INTEGER;
+v_application_id VARCHAR2(128);
+BEGIN
+ORA_KAFKA.CREATE_VIEWS('KAFKACLU1','orakafkatestgroup','topic05',ORA_KAFKA.TOPIC_FORMAT_JSON_VARCHAR2,'ORAKAFKA_VARCHAR2_REF_TABLE',
+v_views_created,v_application_id, 1, TRUE, '');
+dbms_output.put_line('View created = ' || v_views_created);
+dbms_output.put_line('Application id = ' || v_application_id);
+dbms_output.put_line('Created views for topic05');
+END;
+/
+
+DECLARE
+v_views_created INTEGER;
+v_application_id VARCHAR2(128);
+BEGIN
+ORA_KAFKA.CREATE_VIEWS('KAFKACLU1','orakafkatestgroup','topic06',ORA_KAFKA.TOPIC_FORMAT_JSON_VARCHAR2,'ORAKAFKA_VARCHAR2_REF_TABLE',
+v_views_created,v_application_id, 1, TRUE, '');
+dbms_output.put_line('View created = ' || v_views_created);
+dbms_output.put_line('Application id = ' || v_application_id);
+dbms_output.put_line('Created views for topic06');
+END;
+/
+
+DECLARE
+v_views_created INTEGER;
+v_application_id VARCHAR2(128);
+BEGIN
+ORA_KAFKA.CREATE_VIEWS('KAFKACLU1','orakafkatestgroup','topic07',ORA_KAFKA.TOPIC_FORMAT_JSON_VARCHAR2,'ORAKAFKA_VARCHAR2_REF_TABLE',
+v_views_created,v_application_id, 1, TRUE, '');
+dbms_output.put_line('View created = ' || v_views_created);
+dbms_output.put_line('Application id = ' || v_application_id);
+dbms_output.put_line('Created views for topic07');
+END;
+/
+
+DECLARE
+v_views_created INTEGER;
+v_application_id VARCHAR2(128);
+BEGIN
+ORA_KAFKA.CREATE_VIEWS('KAFKACLU1','orakafkatestgroup','topic08',ORA_KAFKA.TOPIC_FORMAT_JSON_VARCHAR2,'ORAKAFKA_VARCHAR2_REF_TABLE',
+v_views_created,v_application_id, 1, TRUE, '');
+dbms_output.put_line('View created = ' || v_views_created);
+dbms_output.put_line('Application id = ' || v_application_id);
+dbms_output.put_line('Created views for topic08');
+END;
+/
+
+DECLARE
+v_views_created INTEGER;
+v_application_id VARCHAR2(128);
+BEGIN
+ORA_KAFKA.CREATE_VIEWS('KAFKACLU1','orakafkatestgroup','topic09',ORA_KAFKA.TOPIC_FORMAT_JSON_VARCHAR2,'ORAKAFKA_VARCHAR2_REF_TABLE',
+v_views_created,v_application_id, 1, TRUE, '');
+dbms_output.put_line('View created = ' || v_views_created);
+dbms_output.put_line('Application id = ' || v_application_id);
+dbms_output.put_line('Created views for topic09');
+END;
+/
+
+DECLARE
+v_views_created INTEGER;
+v_application_id VARCHAR2(128);
+BEGIN
+ORA_KAFKA.CREATE_VIEWS('KAFKACLU1','orakafkatestgroup','topic10',ORA_KAFKA.TOPIC_FORMAT_JSON_VARCHAR2,'ORAKAFKA_VARCHAR2_REF_TABLE',
+v_views_created,v_application_id, 1, TRUE, '');
+dbms_output.put_line('View created = ' || v_views_created);
+dbms_output.put_line('Application id = ' || v_application_id);
+dbms_output.put_line('Created views for topic10');
+END;
+/
+
+
+#### Ejecución de la prueba:
+############################
+
+#### Dentro del docker:
+cd /tmp
+./spin-on-topic.sh 40 15 10
+
+### Dentro del EXA:
+cd /home/oracle/INDITEX/admin
+snap
+./exec-kafka-etl.sh 40 15 10
+snap
+
+
+CPU on Exa: max 20% en nodo1 => aprox. 5 cores al 100%
+CPU on KAFKAINST: picos de 100%
+
+KAFKA_10TOPIC_awrrpt_1_862_863.txt
+
+Top 10 Foreground Events by Total Wait Time
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                                           Total Wait       Avg   % DB Wait
+Event                                Waits Time (sec)      Wait   time Class
+------------------------------ ----------- ---------- --------- ------ --------
+external table read                    967      619.8  640.96ms   58.6 User I/O
+DB CPU                                          297.4             28.1
+utl_file I/O                        19,831       11.1  559.71us    1.0 User I/O
+Failed Logon Delay                      11         11 1000.09ms    1.0 Other
+Sync ASM rebalance                   2,481        5.9    2.39ms     .6 Other
+external table open                  1,574        4.6    2.95ms     .4 User I/O
+PX Deq: Join ACK                    11,464        4.5  395.78us     .4 Other
+PX Deq: Slave Session Stats         23,074        3.2  139.60us     .3 Other
+CSS initialization                     630        2.5    3.96ms     .2 Other
+buffer busy waits                      152          2   13.32ms     .2 Concurre
+
+
+#### Pruebas de rendimiento puro sobre 1 topic: se mide cuanto tarda el INSERT as SELECT
+****************************************************************************************
+
+1000 mensajes en topic01	=> Elapsed: 00:00:01.88
+2000				=> Elapsed: 00:00:01.99
+3000				=> Elapsed: 00:00:01.92
+4000				=> Elapsed: 00:00:01.90
+5000				=> Elapsed: 00:00:01.90
+6000				=> Elapsed: 00:00:01.90
+10000				=> Elapsed: 00:00:02.00
+20000				=> Elapsed: 00:00:02.07
+50000				=> Elapsed: 00:00:02.29
+100000				=> Elapsed: 00:00:02.46
+500000				=> Elapsed: 00:00:04.39
+1000000				=> Elapsed: 00:00:06.34
+2000000				=> Elapsed: 00:00:10.55
+5000000				=> Elapsed: 00:00:22.15
+10000000			=> Elapsed: 00:00:40.99
+20000000			=> Elapsed: 00:01:16.32
+
+
+
+
+
+
+
+
+
