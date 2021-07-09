@@ -1,0 +1,108 @@
+a. Copiar el DMP al object storage con el cli:
+
+Después de configurar el cli para acceder al entorno OCI, y haber creado un bucket con nombre DATAPUMP:
+
+oci os object put --bucket-name DATAPUMP --file /media/Data/Preventa/Cruz.Roja/Datos/expdp.usrbi.dmp
+
+
+
+BEGIN
+dbms_cloud.drop_credential ('SDU_CRED_NAME');
+END;
+/
+
+
+En la consola, crear un AUTH TOKEN para el usuario api.user => 5lz-PRXl_6[;dVsX2p<j
+
+BEGIN
+DBMS_CLOUD.CREATE_CREDENTIAL(
+credential_name => 'SDU_CRED_NAME',
+username => 'api.user',
+password => '5lz-PRXl_6[;dVsX2p<j'
+);
+END;
+/
+
+
+curl -u 'api.user:5lz-PRXl_6[;dVsX2p<j' --head https://swiftobjectstorage.us-ashburn-1.oraclecloud.com/v1/gse00015624/DATAPUMP/expdp.usrbi.dmp
+
+[opc@sducn1 .oci]$ curl -u 'api.user:5lz-PRXl_6[;dVsX2p<j' --head https://swiftobjectstorage.us-ashburn-1.oraclecloud.com/v1/gse00015624/DATAPUMP/expdp.usrbi.dmp
+HTTP/1.1 200 OK
+Date: Fri, 10 Aug 2018 10:56:31 GMT
+Content-Type: binary/octet-stream
+Content-Length: 8386449408
+Connection: keep-alive
+Accept-Ranges: bytes
+X-Trans-Id: 887b3ff0-f0f2-28ff-1df1-31f006138a32
+X-Timestamp: 1533898591.32900
+ETag: 496223c111863eb5763daba71d2cc090-63
+Last-Modified: Fri, 10 Aug 2018 10:07:54 GMT
+opc-request-id: 887b3ff0-f0f2-28ff-1df1-31f006138a32
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Methods: POST,PUT,GET,HEAD,DELETE,OPTIONS
+Access-Control-Allow-Credentials: true
+Access-Control-Expose-Headers: Accept-Ranges,Access-Control-Allow-Credentials,Access-Control-Allow-Methods,Access-Control-Allow-Origin,Content-Length,Content-Type,Date,ETag,Last-Modified,X-Timestamp,X-Trans-Id,opc-client-info,opc-request-id
+
+
+
+impdp admin/AaZZ0r_cle#1@myatp_medium \
+directory=data_pump_dir \
+credential=SDU_CRED_NAME \
+dumpfile=https://swiftobjectstorage.us-ashburn-1.oraclecloud.com/v1/gse00015624/DATAPUMP/expdp.usrbi.dmp
+
+Import> status
+
+Job: SYS_IMPORT_FULL_01
+  Operation: IMPORT                         
+  Mode: FULL                           
+  State: EXECUTING                      
+  Bytes Processed: 0
+  Current Parallelism: 4
+  Job Error Count: 0
+  Job heartbeat: 2
+  Dump File: https://swiftobjectstorage.us-ashburn-1.oraclecloud.com/v1/gse00015624/DATAPUMP/expdp.usrbi.dmp
+  
+Worker 1 Status:
+  Instance ID: 1
+  Instance name: BPOD3
+  Object start time: Friday, 10 August, 2018 11:05:11
+  Object status at: Friday, 10 August, 2018 11:05:11
+  Process Name: DW00
+  State: EXECUTING                      
+  Object Schema: USRBI
+  Object Name: NSE_BI_HEC_PARTICIPANTES_R
+  Object Type: SCHEMA_EXPORT/TABLE/TABLE_DATA
+  Completed Objects: 1
+  Completed Rows: 24,090,441
+  Completed Bytes: 1,238,750,032
+  Percent Done: 26
+  Worker Parallelism: 1
+
+Import> 
+
+
+
+SQL> @query1
+
+	C1	   C2	      C3	 C4	    C5 C6
+---------- ---------- ---------- ---------- ---------- -------------------------
+    270597     181013	   75512      18147	201709 Septiembre 2017
+    236920     178645	   77263      19088	201710 Octubre 2017
+
+Elapsed: 00:01:39.60
+
+
+### Recuperar el LOG del impdp:
+
+BEGIN
+DBMS_CLOUD.PUT_OBJECT
+(
+    credential_name => 'SDU_CRED_NAME',
+    object_uri => 'https://swiftobjectstorage.us-phoenix-1.oraclecloud.com/v1/atpc/atpc_user/import.log',
+    directory_name  => 'DATA_PUMP_DIR',
+    file_name => 'import.log');
+END;
+/
+
+
+

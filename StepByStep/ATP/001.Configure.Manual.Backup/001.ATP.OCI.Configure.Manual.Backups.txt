@@ -1,0 +1,54 @@
+a. Crear una propiedad de default_bucket como usuario ADMIN:
+------------------------------------------------------------
+
+Using an Oracle database client, set the database default_bucket property to your Oracle Cloud Infrastructure Object Storage tenancy URL. The format of the tenancy URL is https://swiftobjectstorage.region.oraclecloud.com/v1/object_storage_namespace_string. You must to do this using the ADMIN user.
+
+region = us-ashburn-1
+object_storage_namespace_string = gse00015624 (ver pantallazo 001.Screenshot from 2018-08-13 11-21-10.png)
+
+ALTER DATABASE PROPERTY SET default_bucket='https://swiftobjectstorage.us-ashburn-1.oraclecloud.com/v1/gse00015624';
+
+
+
+
+b. Crear un bucket en el Object Storage:
+----------------------------------------
+
+Ver pantallazo (002.Screenshot from 2018-08-13 11-23-37.png)
+
+c. Crear una credential:
+------------------------
+
+Using an Oracle database client, create a credential for your Oracle Cloud Infrastructure Object Storage account. Use DBMS_CLOUD.CREATE_CREDENTIAL to create the credential. You must to do this using the ADMIN user:
+
+BEGIN
+DBMS_CLOUD.CREATE_CREDENTIAL(
+credential_name => 'DEF_CRED_NAME',
+username => 'api.user',
+password => '5lz-PRXl_6[;dVsX2p<j'
+);
+END;
+/
+
+La password es un AUTH_TOKEN generado para este usuario desde la consola (Menu Users). NB: las auth_token sustituyen los swift password !!!
+
+
+d. Set default credential:
+--------------------------
+
+Set the database property default_credential to the credential you created in the previous step:
+
+ALTER DATABASE PROPERTY SET default_credential = 'ADMIN.DEF_CRED_NAME';
+
+SELECT PROPERTY_VALUE from database_properties WHERE PROPERTY_NAME='DEFAULT_BUCKET';
+
+PROPERTY_VALUE
+--------------------------------------------------------------------------------
+https://swiftobjectstorage.us-ashburn-1.oraclecloud.com/v1/gse00015624
+
+
+e. Take a manual backup:
+------------------------
+
+
+Pantallazo: 006.Screenshot from 2018-06-29 17-28-08.png

@@ -1,0 +1,53 @@
+Stephane,
+
+Te adjunto un proyecto sencillo y te copio los comandos para ejecutarlos. Lo he probado en linux nuestro y funciona.
+
+Tienes el manual aqui:
+
+https://docs.oracle.com/en/cloud/paas/atp-cloud/atpug/using-oracle-autonomous-transaction-processing.pdf
+
+1) Verificar que la version de JAVA es JDK8+++ (version 191+++)
+
+ java -version
+java version "1.8.0_191"
+Java(TM) SE Runtime Environment (build 1.8.0_191-b12)
+Java HotSpot(TM) 64-Bit Server VM (build 25.191-b12, mixed mode)
+
+2) Crear un directorio para descomprimir el wallet*.zip. Ya lo tienes en el ZIP adjunto como carpeta hija del proyecto.
+
+3) Te he copiado un codigo JAVA donde he puesto el login, pwd y JDBC URL con rapdb_low que viene en el tnsnames.ora:
+
+("rap002", "rap002", "jdbc:oracle:thin:@rapdb_low")
+
+4) compilar el codigo con solo el driver "ojdbc8.jar"
+
+javac -classpath ./lib/ojdbc8.jar StatementSample.java
+
+5) Ejecutar solo con el driver "ojdbc8.jar" y todos los parametros en linea de comando:
+
+ java -Doracle.net.tns_admin=/home/opc/ATP/atp_test/wallet/rapdb -Djavax.net.ssl.trustStore=truststore.jks -Djavax.net.ssl.trustStorePassword=AaZZ0r_cle#1 -Djavax.net.ssl.keyStore=keystore.jks -Djavax.net.ssl.keyStorePassword=AaZZ0r_cle#1 -Doracle.net.ssl_server_dn_match=true -Doracle.net.ssl_version=1.2 -cp ./lib/ojdbc8.jar:. StatementSample
+
+Es importante configurar el parametro "oracle.net.tns_admin" para apuntar al directorio donde esta descomprimido el Wallet.
+
+En el manual, existe otros metodos de ejecutar para ofuscar un poco el pwd. keyStorePassword y trustStorePassword son los pwds del WALLET.
+
+Un saludo
+
+Olivier
+
+OJO: hay que copiar, aparte del ojdbc8.jar, todos estos ficheros EN EL MISMO DIRECTORIO QUE ojdbc8.jar:
+
+-rw-rw-r--. 1 opc  opc    11596 ene 31 12:00 ojdbc.policy
+-rwxrwxrwx. 1 root root 4161744 ene 31 12:23 ojdbc8.jar
+-rw-rw-r--. 1 opc  opc   144428 ene 31 12:23 ons.jar
+-rw-rw-r--. 1 opc  opc   307817 ene 31 12:23 oraclepki.jar
+-rw-rw-r--. 1 opc  opc  1661545 ene 31 12:23 orai18n.jar
+-rw-rw-r--. 1 opc  opc    29103 ene 31 12:23 simplefan.jar
+-rw-rw-r--. 1 opc  opc   306854 ene 31 12:23 osdt_core.jar
+-rw-rw-r--. 1 opc  opc   205152 ene 31 12:23 osdt_cert.jar
+-rw-rw-r--. 1 opc  opc  1398331 ene 31 12:23 ucp.jar
+-rw-rw-r--. 1 opc  opc   262415 ene 31 12:23 xdb6.jar
+
+
+
+

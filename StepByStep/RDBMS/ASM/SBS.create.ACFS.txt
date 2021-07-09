@@ -1,0 +1,86 @@
+### As user grid:
+
+asmcmd
+
+ASMCMD> lsdg
+State    Type  Rebal  Sector  Logical_Sector  Block       AU    Total_MB     Free_MB  Req_mir_free_MB  Usable_file_MB  Offline_disks  Voting_files  Name
+MOUNTED  HIGH  N         512             512   4096  4194304   373481472   372551120          8892416       121219568              0             Y  DATAC1/
+MOUNTED  HIGH  N         512             512   4096  4194304   615186432   615168768         14647296       200173824              0             N  RECOC1/
+MOUNTED  HIGH  N         512             512   4096  4194304  1098424320  1098409872         26152960       357418970              0             N  SPARSEC1/
+
+--- Creo un volumen de 4TB !!!
+
+volcreate -G RECOC1 -s 4096G volume1
+volinfo -G RECOC1 volume1
+
+ASMCMD> volcreate -G RECOC1 -s 4096G volume1
+ASMCMD> volinfo -G RECOC1 volume1
+Diskgroup Name: RECOC1
+
+	 Volume Name: VOLUME1
+	 Volume Device: /dev/asm/volume1-149
+	 State: ENABLED
+	 Size (MB): 4194304
+	 Resize Unit (MB): 64
+	 Redundancy: HIGH
+	 Stripe Columns: 8
+	 Stripe Width (K): 1024
+	 Usage: 
+	 Mountpath: 
+
+[grid@tf1ex0001 ~]$ sqlplus / as sysasm
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Mon Aug 17 12:03:36 2020
+Version 19.8.0.0.0
+
+Copyright (c) 1982, 2020, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.8.0.0.0
+
+SQL> SELECT volume_name, volume_device FROM V$ASM_VOLUME WHERE volume_name ='VOLUME1';
+
+VOLUME_NAME
+------------------------------
+VOLUME_DEVICE
+--------------------------------------------------------------------------------
+VOLUME1
+/dev/asm/volume1-149
+
+### As user grid !!!
+
+/sbin/mkfs -t acfs /dev/asm/volume1-149
+
+[grid@tf1ex0001 ~]$ /sbin/mkfs -t acfs /dev/asm/volume1-149
+mkfs.acfs: version                   = 19.0.0.0.0
+mkfs.acfs: on-disk version           = 46.0
+mkfs.acfs: volume                    = /dev/asm/volume1-149
+mkfs.acfs: volume size               = 4398046511104  (   4.00 TB )
+mkfs.acfs: Format complete.
+
+### As user root !!!
+
+/sbin/acfsutil registry -a /dev/asm/volume1-149 /acfsmounts/acfs1
+
+[root@tf1ex0001 ~]# /sbin/acfsutil registry -a /dev/asm/volume1-149 /acfsmounts/acfs1
+acfsutil registry: mount point /acfsmounts/acfs1 successfully added to Oracle Registry
+
+[root@tf1ex0001 ~]# df -h | grep acfs
+/dev/asm/volume1-149                                       4,0T  9,2G  4,0T   1% /acfsmounts/acfs1
+
+[root@tf1ex0001 ~]# cd /
+[root@tf1ex0001 /]# chown -R oracle:oinstall acfsmounts
+
+### As user oracle !!!
+
+[oracle@tf1ex0001 ~]$ cd /acfsmounts/acfs1/
+[oracle@tf1ex0001 acfs1]$ mkdir DATAPUMP
+
+
+
+
+
+
+
