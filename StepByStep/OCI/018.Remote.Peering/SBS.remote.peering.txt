@@ -1,0 +1,62 @@
+A. I have 2 VCN in the same tenancy:
+************************************
+    - One in Amsterdam: skynet
+    - One in Frankfurt: skynetfra
+
+B. Create a DRG in AMS: DRGAMS
+******************************
+C. Attach VCN skynet to DRGAMS
+******************************
+
+D. create a DRG in FRA: DRGFRA
+******************************
+E. Attach VCN skynetfra to DRGFRA
+*********************************
+
+F. in both regions, create a RPC and attach it to the corresponding DRG:
+************************************************************************
+RPC RPC2AMS will be created in FRA, and attached to DRGFRA
+
+RPC RPC2FRA will be created in AMS, and attached to DRGAMS
+
+RPC2AMS OCID: ocid1.remotepeeringconnection.oc1.eu-frankfurt-1.aaaaaaaa5hgxdvqvkh22wjyywjbsaodo6zahonyflm7midf3xyhs5t3zu6hq
+RPC2FRA OCID: ocid1.remotepeeringconnection.oc1.eu-amsterdam-1.aaaaaaaant56dunwkjpnuvopi5air6b3uswuiwoppltso3exdlm3aceukbgq
+
+G. Establish the connection between the two RPC:
+************************************************
+
+In each region, on the RPC console, click "Establish Connection".
+Put a value in the region and OCID fields.
+
+After a couple of minutes, both RPC get peered with eachother.
+
+H. Configure the route tables in each region:
+*********************************************
+
+Configure static routes to each CIDR block through RPC and DRG
+
+In FRA: CIDR 10.10.0.0/22 (VCN skynet in AMS) will be routed through the RPC RPC2AMS
+In AMS: CIDR 10.11.0.0/22 (VCN skynetfra in FRA) will be routed through the RPC RPC2FRA
+
+I. Configure security rules:
+****************************
+
+On each VCN, add security rules to allow only certain protocol/port from the peered VCN:
+
+For example, I'll allow only TCP/22 (for testing purposes) and TCP/1521 from one VCN to the other !!!
+
+J. Connectivity test:
+*********************
+
+ssh connect from AMS to FRA:
+
+    - Connect to the bastion host in AMS
+    - SSH node 1 of Exa Infra in FRA
+
+=> ALL OK !!!
+
+
+
+
+
+

@@ -1,0 +1,27 @@
+A. As grid user, get the cluster name:
+**************************************
+
+You need a username and password to connect to the Exadata Storage Server. On Exadata Cloud@Customer, the preconfigured user is cloud_user_clustername, 
+where clustername is the name of the virtual machine (VM) cluster 
+that is being used. You can determine the name of the VM cluster by running the following command as the grid user on any cluster node:
+
+crsctl get cluster name
+
+[root@pocexaclu-5h8hh1 ~]# su - grid
+Last login: Thu Jun 17 09:26:41 CEST 2021
+[grid@pocexaclu-5h8hh1 ~]$ crsctl get cluster name
+CRS-6724: Current cluster name is 'cl-qy6qem3q-fa1'
+
+The password for cloud_user_clustername is initially set to the administration password that you specify when creating the starter database deployment on the VM cluster.
+
+Cell's IP:
+
+[root@pocexaclu-5h8hh1 oracle]# cat /etc/oracle/cell/network-config/cellip.ora
+cell="100.106.0.38;100.106.0.39"
+cell="100.106.0.40;100.106.0.41"
+cell="100.106.0.42;100.106.0.43"
+
+B. As root, use exacli to connect to any cell server:
+*****************************************************
+
+exacli -l cloud_user_cl-qy6qem3q-fa1 -c 100.106.0.38
