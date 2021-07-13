@@ -1,3 +1,57 @@
+Bug reported for versions 19.9 and backward
+
+SQL>  exec DBMS_UMF.register_node ('Topology_1', 'TSTN01_STANDBY', 'AWR_PRI2STB','AWR_STB2PRI','FALSE','FALSE')
+BEGIN DBMS_UMF.register_node ('Topology_1', 'TSTN01_STANDBY', 'AWR_PRI2STB','AWR_STB2PRI','FALSE','FALSE'); END;
+
+*
+ERROR at line 1:
+ORA-15769: node [TSTN01_STANDBY] is not registered in RMF topology [Topology_1]
+ORA-06512: at "SYS.DBMS_UMF_INTERNAL", line 168
+ORA-06512: at "SYS.DBMS_UMF_INTERNAL", line 206
+ORA-06512: at "SYS.DBMS_UMF", line 671
+ORA-06512: at line 1
+ORA-06512: at "SYS.DBMS_UMF", line 643
+ORA-06512: at "SYS.DBMS_UMF", line 561
+ORA-06512: at line 1
+
+SQL> select * from dba_umf_registration;
+
+TOPOLOGY_NAME
+--------------------------------------------------------------------------------
+NODE_NAME
+--------------------------------------------------------------------------------
+   NODE_ID  NODE_TYPE AS_SOURCE            AS_CANDIDATE_TARGET
+---------- ---------- -------------------- --------------------
+STATE
+--------------------------------------------------------------------------------
+Topology_1
+TSTN01_PRIMARY
+2497751589          0 FALSE                FALSE
+OK
+
+Topology_1
+TSTN01_STANDBY
+ 379644051          0 FALSE                FALSE
+REGISTRATION PENDING
+
+
+Fixed in 19.10+
+Fixed on 19.9 with one-off patch 
+
+Oracle Database 19 Release 19.9.0.0.201020DBRU
+
+ORACLE DATABASE Patch for Bug# 29961360 for Linux-x86-64 Platforms
+
+This patch is RAC Rolling Installable  - Please read My Oracle Support Document 244241.1 https://support.us.oracle.com/oip/faces/secure/km/DocumentDisplay.jspx?id=244241.1
+Rolling Patch - OPatch Support for RAC.
+
+This patch is Data Guard Standby-First Installable - Please read My Oracle Support Note 1265700.1 https://support.us.oracle.com/oip/faces/secure/km/DocumentDisplay.jspx?id=1265700.1
+Oracle Patch Assurance - Data Guard Standby-First Patch Apply for details on how to remove risk and reduce downtime when applying this patch.
+
+Released: Thu Nov 19 00:45:40 2020
+ 
+This document describes how you can install the ORACLE DATABASE overlay patch for bug#  29961360 on your Oracle Database 19 Release 19.9.0.0.201020DBRU
+
 a. On the primary DB, unlock the SYS$UMF user !!!
 
 sqlplus / as sysdba
