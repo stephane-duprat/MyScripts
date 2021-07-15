@@ -1,0 +1,245 @@
+-- From v$sql: quite easy, as both force_matching_signature and exact_matching_signature are present in the view !!!
+
+SELECT force_matching_signature, COUNT(1)
+FROM v$sql
+WHERE force_matching_signature > 0
+  AND force_matching_signature <> exact_matching_signature
+GROUP BY force_matching_signature
+HAVING COUNT(1) > 10
+ORDER BY 2
+/
+
+
+col FORCE_MATCHING_SIGNATURE format 9999999999999999999999999
+select * from (
+select A.FORCE_MATCHING_SIGNATURE, count(distinct sql_id) as ZZ
+from DBA_HIST_SQLSTAT A
+where A.FORCE_MATCHING_SIGNATURE > 0 and A.dbid = 243561075 
+and A.parsing_user_id <> 0  -- To exclude SQL parsed by SYS !!!
+group by A.FORCE_MATCHING_SIGNATURE
+order by 2 desc
+)
+where ZZ > 10
+/
+
+  FORCE_MATCHING_SIGNATURE	   ZZ
+-------------------------- ----------
+      12195532102414740501	  104
+       2808993446643998709	   35
+       3400153511601554737	   11
+
+-- Amount of parses represented by those querys !!!
+
+select sum(PARSE_CALLS_DELTA)
+from DBA_HIST_SQLSTAT
+where dbid = 243561075
+and parsing_user_id <> 0;
+
+SUM(PARSE_CALLS_DELTA)
+----------------------
+	      58212082
+
+with TT as 
+(
+select FMS from (
+select A.FORCE_MATCHING_SIGNATURE as FMS, count(distinct sql_id) as ZZ
+from DBA_HIST_SQLSTAT A
+where A.FORCE_MATCHING_SIGNATURE > 0 and A.dbid = &&dbid and A.instance_number = &&inum
+and A.parsing_user_id <> 0  -- To exclude SQL parsed by SYS !!!
+group by A.FORCE_MATCHING_SIGNATURE
+order by 2 desc
+)
+where ZZ > 10
+)
+select sum(PARSE_CALLS_DELTA)
+from DBA_HIST_SQLSTAT A, TT
+where dbid = &&dbid
+and instance_number = &&inum
+and parsing_user_id <> 0
+and A.FORCE_MATCHING_SIGNATURE = TT.FMS
+/
+
+SUM(PARSE_CALLS_DELTA)
+----------------------
+		   211
+
+
+select FORCE_MATCHING_SIGNATURE, sql_id, count(*)
+from DBA_HIST_SQLSTAT
+where FORCE_MATCHING_SIGNATURE in 
+(
+select FMS from (
+select A.FORCE_MATCHING_SIGNATURE as FMS, count(distinct sql_id) as ZZ
+from DBA_HIST_SQLSTAT A
+where A.FORCE_MATCHING_SIGNATURE > 0 and A.dbid = 243561075 
+and A.parsing_user_id <> 0  -- To exclude SQL parsed by SYS !!!
+group by A.FORCE_MATCHING_SIGNATURE
+order by 2 desc
+)
+where ZZ > 10
+)
+group by FORCE_MATCHING_SIGNATURE, sql_id
+order by 1
+/
+
+  FORCE_MATCHING_SIGNATURE SQL_ID	   COUNT(*)
+-------------------------- ------------- ----------
+       2808993446643998709 079c5m0wycrbm	  1
+       2808993446643998709 27vbr4j4uvv64	  1
+       2808993446643998709 27yw4mffntka0	  1
+       2808993446643998709 34v58zu9jqqcv	  1
+       2808993446643998709 3frhzt11w22ma	  2
+       2808993446643998709 3mpuvnv45bd9k	  1
+       2808993446643998709 400ymwhdtx6bb	  1
+       2808993446643998709 42a1q8j3kqcsc	  2
+       2808993446643998709 42g2fm8xyy744	  2
+       2808993446643998709 43gbgfuhjpggs	  1
+       2808993446643998709 4zhbf54kwd0cp	  1
+       2808993446643998709 5dj0ds43wgwc5	  2
+       2808993446643998709 5us32uvj6ygj9	  2
+       2808993446643998709 68d9sf5b7qzyu	  1
+       2808993446643998709 6g3jgnavj0svx	  1
+       2808993446643998709 78u9wmdffvj0k	  1
+       2808993446643998709 7pn5ft2spffaz	  1
+       2808993446643998709 7r23q58qcwjvb	  1
+       2808993446643998709 834z7ucuzhp97	  1
+       2808993446643998709 86af06x2sk3za	  1
+       2808993446643998709 89v1m4vq4zcn8	  3
+       2808993446643998709 8g3g6zxch3d40	  1
+       2808993446643998709 8mr062hz1rud8	  5
+       2808993446643998709 8par94q1bpyt4	  1
+       2808993446643998709 975gspc3rqkp9	  3
+       2808993446643998709 a94z42m5m6mc0	  1
+       2808993446643998709 b09sb4t1344wy	  1
+       2808993446643998709 b0ry4u4fhafna	  1
+       2808993446643998709 b66pqg8spz8bu	  2
+       2808993446643998709 bfqv0xspqzh5x	  1
+       2808993446643998709 ct371n3jzghgb	  1
+       2808993446643998709 d4dk33a86dayn	  1
+       2808993446643998709 fpav8zzdrwn0f	  1
+       2808993446643998709 g0dm5qs3dfmhu	  1
+       2808993446643998709 g68743ftkqr8w	  1
+       3400153511601554737 094uhrmg4uhb2	  1
+       3400153511601554737 4yb8gk5k9myms	  1
+       3400153511601554737 5dnh7g79bw4k9	  1
+       3400153511601554737 7avq10dw1dy1c	  1
+       3400153511601554737 7dyz903xcp8mf	  1
+       3400153511601554737 7yskdy501a0s2	  1
+       3400153511601554737 8zqxj8x0hxw0r	  1
+       3400153511601554737 9trhn947txvnb	  1
+       3400153511601554737 9yhhnjwhra0w5	  1
+       3400153511601554737 cy27arhx0sxmf	  1
+       3400153511601554737 g1psvq25rhsc1	  1
+      12195532102414740501 07d6vqf7gkw1p	  1
+      12195532102414740501 07fb2uuf24wg9	  1
+      12195532102414740501 0d59fbtnq7xu4	  1
+      12195532102414740501 0g505nb2tx35y	  1
+      12195532102414740501 0m21190wqb1fb	  1
+      12195532102414740501 0tywpsz5d9wzc	  1
+      12195532102414740501 0xd26t4gcjfhw	  1
+      12195532102414740501 139n9gttskjvu	  1
+      12195532102414740501 1fy5xu82z66zw	  1
+      12195532102414740501 1r6jngghum40d	  1
+      12195532102414740501 22fqrzydq5rr3	  1
+      12195532102414740501 22gnpxftcp8ft	  1
+      12195532102414740501 22vzgnnd5t96j	  1
+      12195532102414740501 23bf26gwxsnyn	  1
+      12195532102414740501 2g2c6vrjuwcjr	  1
+      12195532102414740501 2rp47qaz0tzy8	  1
+      12195532102414740501 2s3b55b6vcxyf	  1
+      12195532102414740501 2wkt3w39dhj53	  1
+      12195532102414740501 2y34yh0xc95ps	  1
+      12195532102414740501 351kzm3x2v1n5	  1
+      12195532102414740501 3acma7d56akqj	  1
+      12195532102414740501 3b3bsc8a9uzwf	  1
+      12195532102414740501 3dfdn7qg3b7nv	  1
+      12195532102414740501 3g0c3ssvsszym	  1
+      12195532102414740501 3xg0zzmrkf0d5	  1
+      12195532102414740501 476twrk43vk5w	  1
+      12195532102414740501 49uf1z4tv9f4s	  1
+      12195532102414740501 4a2hrzg2zd9yn	  1
+      12195532102414740501 4bcugrz42ufh4	  1
+      12195532102414740501 4f2bvryap9st3	  1
+      12195532102414740501 4sfs9941ns43c	  1
+      12195532102414740501 4sm9r7g5qzc88	  1
+      12195532102414740501 4u6t2qtr3zbr4	  1
+      12195532102414740501 4us0njxmctubv	  1
+      12195532102414740501 4zd8dxwmqz56n	  1
+      12195532102414740501 5445tfzk8mt8v	  1
+      12195532102414740501 55mqjzq24rcm2	  1
+      12195532102414740501 56mkhfmkft4yg	  1
+      12195532102414740501 56nrk5421qr8z	  1
+      12195532102414740501 598pbnkn7fzd9	  1
+      12195532102414740501 5uvks0rx9vkz7	  1
+      12195532102414740501 5x9dr9j1jp0zw	  1
+      12195532102414740501 5ybgp69a12qs5	  1
+      12195532102414740501 6aa05g72fkcvq	  1
+      12195532102414740501 6dscbh16328sg	  1
+      12195532102414740501 6fn7fc9nkba4s	  1
+      12195532102414740501 6n6r3yrrpf1rp	  1
+      12195532102414740501 6pkdun0durn1x	  1
+      12195532102414740501 6x79tgn984c08	  1
+      12195532102414740501 6z7xqv4p6cphz	  1
+      12195532102414740501 728mh6pxqpv6k	  1
+      12195532102414740501 76uxakg1td9jk	  1
+      12195532102414740501 7kt87jddyhzqv	  1
+      12195532102414740501 7r08zwpn2gfhb	  1
+      12195532102414740501 7tuap6gc5h2d3	  1
+      12195532102414740501 7xnpykjj2ha3j	  1
+      12195532102414740501 7ykphum493ab7	  1
+      12195532102414740501 7yp4buv4d70ct	  1
+      12195532102414740501 81x12mgrgxu54	  1
+      12195532102414740501 82ydqwy0023ru	  1
+      12195532102414740501 83g10a801dt7k	  1
+      12195532102414740501 85t6ys15ymxb2	  1
+      12195532102414740501 86sdrj7314p28	  1
+      12195532102414740501 8q3pctd277a6z	  1
+      12195532102414740501 8tc8un7zybyyc	  1
+      12195532102414740501 94c6b8xphtf0k	  1
+      12195532102414740501 9qwn5kqpb8pv6	  1
+      12195532102414740501 9t304wh10486v	  1
+      12195532102414740501 9t70n19q17kdu	  1
+      12195532102414740501 a0a5b6t6k23mz	  1
+      12195532102414740501 a3tnaxzk1mq25	  1
+      12195532102414740501 a57sn6jcj2wn0	  1
+      12195532102414740501 aapp777jpmb0u	  1
+      12195532102414740501 af3xwj05km61z	  1
+      12195532102414740501 ahfwzsnc1zga0	  1
+      12195532102414740501 az6bdcrtswgq8	  1
+      12195532102414740501 bd3mzsbyb1m4k	  1
+      12195532102414740501 bsm81vv6gqxfg	  1
+      12195532102414740501 bzgbx0wrzq3fn	  1
+      12195532102414740501 c0fsrgcs14ah9	  1
+      12195532102414740501 c86bm7apy2snb	  1
+      12195532102414740501 c94hf8vfsw9yb	  1
+      12195532102414740501 cafc563ptkhub	  1
+      12195532102414740501 cj5xgu249rxp0	  1
+      12195532102414740501 dbamsy6z7zm86	  1
+      12195532102414740501 dccy6t3y984w1	  1
+      12195532102414740501 dfszucphdybhb	  1
+      12195532102414740501 dgqjgg329vdms	  1
+      12195532102414740501 dh351y19ag57z	  1
+      12195532102414740501 dwdrsu3tv5hv3	  1
+      12195532102414740501 f5892k4a19fd1	  1
+      12195532102414740501 fddfukah78gq7	  1
+      12195532102414740501 ffrgxa2vws4sw	  1
+      12195532102414740501 fnvyd5anbyaj5	  1
+      12195532102414740501 ftfjj3j0y394s	  1
+      12195532102414740501 g0k8uqsv2n9hs	  1
+      12195532102414740501 g0ss0p3z8jw2m	  1
+      12195532102414740501 gbfkhnpy9mrmy	  1
+      12195532102414740501 gkp00trg6rjuw	  1
+      12195532102414740501 gqjw6bzagr1gc	  1
+      12195532102414740501 grg2hqyunyzu8	  1
+      12195532102414740501 gsg5n6tff5w65	  1
+      12195532102414740501 gtupv0k77r160	  1
+      12195532102414740501 gvg4rby5hx6b3	  1
+
+150 rows selected.
+
+
+
+
+
+
+

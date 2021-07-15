@@ -1,0 +1,2 @@
+select count(*) from dba_tab_partitions where table_name = 'EDX_ETL_XCHANGE_DETAIL_STATUS' and table_owner = 'CBA_DBA'
+/
