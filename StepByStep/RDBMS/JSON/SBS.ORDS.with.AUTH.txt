@@ -1,0 +1,221 @@
+-- Crear un role de lectura de tickets !!!
+
+-- Como usuario usuahm !!!
+
+sqlplus usuahm/AaZZ0r_cle#1@benchatpdb_tp
+
+BEGIN
+  ORDS.create_role(
+    p_role_name => 'read_ticket_role'
+  );
+  
+  COMMIT;
+END;
+/
+
+PL/SQL procedure successfully completed.
+
+
+--- Crear un privilegio, y asociarlo a una lista de roles !!!
+
+DECLARE
+  l_arr OWA.vc_arr;
+BEGIN
+  l_arr(1) := 'read_ticket_role';
+  
+  ORDS.define_privilege (
+    p_privilege_name => 'read_ticket_priv',
+    p_roles          => l_arr,
+    p_label          => 'Ticket reader privilege',
+    p_description    => 'Allow to read tickets'
+  );
+   
+  COMMIT;
+END;
+/
+
+PL/SQL procedure successfully completed.
+
+-- Display the privilege.
+COLUMN name FORMAT A20
+
+SELECT id, name
+FROM   user_ords_privileges
+WHERE  name = 'read_ticket_priv';
+
+	ID NAME
+---------- --------------------
+     10119 read_ticket_priv
+
+-- Display the privilege-role relationship.
+COLUMN privilege_name FORMAT A20
+COLUMN role_name FORMAT A20
+
+SELECT privilege_id, privilege_name, role_id, role_name
+FROM   user_ords_privilege_roles
+WHERE  role_name = 'read_ticket_role';
+
+PRIVILEGE_ID PRIVILEGE_NAME	     ROLE_ID ROLE_NAME
+------------ -------------------- ---------- --------------------
+       10119 read_ticket_priv	       10118 read_ticket_role
+
+
+*********************************************************************************************************
+**** Proteger el web-service de consulta de ticket para que no se pueda acceder sin autenticación !!! ***
+*********************************************************************************************************
+
+
+BEGIN
+  ORDS.create_privilege_mapping(
+    p_privilege_name => 'read_ticket_priv',
+    p_pattern => '/consultaticket/ticket/*'
+  );     
+
+  COMMIT;
+END;
+/
+
+
+PL/SQL procedure successfully completed.
+
+-- Display mapping.
+COLUMN name FORMAT A20
+COLUMN pattern FORMAT A20
+
+SELECT privilege_id, name, pattern
+FROM   user_ords_privilege_mappings
+WHERE  name = 'read_ticket_priv';
+
+PRIVILEGE_ID NAME		  PATTERN
+------------ -------------------- --------------------------------------------------
+       10119 read_ticket_priv	  /consultaticket/ticket/*
+
+
+Once this mapping is in place, we can no longer access the web service without authentication. At this point we've not defined how we should authenticate, only that authentication is needed to access this resource.
+
+-- Intento consultar un ticket:
+
+curl -i -k -H "Content-Type: application/json" -H "filename: 9504702341597F0EE0531818000ABAC6_ticket.S130406-0216733.json" https://ixcsyvrmtjm8ebr-benchatpdb.adb.eu-frankfurt-1.oraclecloudapps.com/ords/usuahm/consultaticket/ticket/
+
+HTTP/1.1 401 Unauthorized
+Date: Wed, 16 Oct 2019 13:26:50 GMT
+Content-Type: text/html
+Content-Length: 16068
+Connection: keep-alive
+X-ORACLE-DMS-ECID: 3107a149-48c9-4550-a407-9fa89e1592ba-0002deb6
+X-ORACLE-DMS-RID: 0
+[...]
+
+Para solventar esto SIN utilizar la autenticación por user/password, ver los pasos siguientes:
+
+**********************************************************************************************************
+
+BEGIN
+  OAUTH.create_client(
+    p_name            => 'Ticket Client',
+    p_grant_type      => 'client_credentials',
+    p_owner           => 'Ahorramas customers',
+    p_description     => 'Client app for tickets consultation',
+    p_support_email   => 'tim@example.com',
+    p_privilege_names => 'read_ticket_priv'
+  );
+
+  COMMIT;
+END;
+/
+
+PL/SQL procedure successfully completed.
+
+-- Display client details.
+COLUMN name FORMAT A20
+set lines 120
+
+SELECT id, name, client_id, client_secret
+FROM   user_ords_clients;
+
+	ID NAME 		CLIENT_ID			 CLIENT_SECRET
+---------- -------------------- -------------------------------- --------------------------------
+     10121 Ticket Client	x3n1g7heGXI0zxN_DJrIXw..	 Az4WOTviFaDjgHgSMq-KLg..
+
+
+
+-- Display client-privilege relationship.
+
+col client_name format a50
+set lines 120
+
+SELECT name, client_name
+FROM   user_ords_client_privileges;
+
+NAME		     CLIENT_NAME
+-------------------- --------------------------------------------------
+read_ticket_priv     Ticket Client
+
+
+-- Associate the client with the role that holds the correct privileges for the resources it needs to access.
+
+BEGIN
+  OAUTH.grant_client_role(
+    p_client_name => 'Ticket Client',
+    p_role_name   => 'read_ticket_role'
+  );
+
+  COMMIT;
+END;
+/
+
+PL/SQL procedure successfully completed.
+
+-- Display client-role relationship.
+COLUMN client_name FORMAT A30
+COLUMN role_name FORMAT A20
+
+SELECT client_name, role_name
+FROM   user_ords_client_roles;
+
+CLIENT_NAME		       ROLE_NAME
+------------------------------ --------------------
+Ticket Client		       read_ticket_role
+
+
+--- Ahora puedo lanzar la consulta, pero primero hay que adquirir un token:
+
+-- In order to access the web service, we must first retrieve an access token using the CLIENT_ID and CLIENT_SECRET we queried from the USER_ORDS_CLIENTS view.
+
+CLIENT_ID     : x3n1g7heGXI0zxN_DJrIXw..
+CLIENT_SECRET : Az4WOTviFaDjgHgSMq-KLg..
+OAUTH URL     : https://ixcsyvrmtjm8ebr-benchatpdb.adb.eu-frankfurt-1.oraclecloudapps.com/ords/usuahm/oauth/token
+
+curl -i -k --user x3n1g7heGXI0zxN_DJrIXw..:Az4WOTviFaDjgHgSMq-KLg.. --data "grant_type=client_credentials" https://ixcsyvrmtjm8ebr-benchatpdb.adb.eu-frankfurt-1.oraclecloudapps.com/ords/usuahm/oauth/token
+
+HTTP/1.1 200 OK
+Date: Wed, 16 Oct 2019 13:31:29 GMT
+Content-Type: application/json
+Transfer-Encoding: chunked
+Connection: keep-alive
+X-ORACLE-DMS-ECID: 0b1d27d0-8451-4eb7-a8da-817c0f8e3bc0-00032ea3
+X-Frame-Options: SAMEORIGIN
+X-ORACLE-DMS-RID: 0
+
+{"access_token":"gg2X2MXiBA7Efy5kxENmUA","token_type":"bearer","expires_in":3600}
+
+=> Esto me devuelve un token valido 3600 segundos = 1 hora !!!!
+
+-- Ahora utilizo el token en mi petición de consulta de ticket:
+
+curl -i -k -H"Authorization: Bearer gg2X2MXiBA7Efy5kxENmUA" -H "filename: 9504702341597F0EE0531818000ABAC6_ticket.S130406-0216733.json" https://ixcsyvrmtjm8ebr-benchatpdb.adb.eu-frankfurt-1.oraclecloudapps.com/ords/usuahm/consultaticket/ticket/
+
+HTTP/1.1 200 OK
+Date: Wed, 16 Oct 2019 13:35:34 GMT
+Content-Type: application/json
+Transfer-Encoding: chunked
+Connection: keep-alive
+X-ORACLE-DMS-ECID: 0b1d27d0-8451-4eb7-a8da-817c0f8e3bc0-000332a8
+ETag: "E8+LkEkRtmUZMcxdI4loK/pByGNCHIgBByfN7bhrO3phro5mxH9EqvyfWaWgrJYdimo2Svs7Y6AfZnPMl7jjBQ=="
+X-ORACLE-DMS-RID: 0
+
+{"items":[{"file_name":"9504702341597F0EE0531818000ABAC6_ticket.S130406-0216733.json","load_timestamp":"2019-10-16T09:11:05.328Z","po_document":"{\n\"body_text\" : [ {\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"1\",\"Dato\":\"AHORRAMAS\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"2\",\"Dato\":\"HINOJOSA DEL DUQUE S/N C/V HINOJAL S/N.\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"3\",\"Dato\":\"AHORRAMAS, S.A. A28/600278\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"4\",\"Dato\":\"07/10/2019 13:19:16 Caja: 6 Tique: 43\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"5\",\"Dato\":\"========================================\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"6\",\"Dato\":\"N�mero factura: S130406/0216733\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"7\",\"Dato\":\"----------------------------------------\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"8\",\"Dato\":\"VAJILLA FAIRY ULTRA 340ML O   B    1,00\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"9\",\"Dato\":\"DESINFECTANTE BREF WC ESCAP   B    1,00\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"10\",\"Dato\":\"COFFEE GOLD 10CAP. INTENSO    A    1,70\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"11\",\"Dato\":\"YOGUR OIKOS P2 TARTA ARANDA   A    1,00\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"12\",\"Dato\":\"MERMELADA S/AZUCAR HELIOS P   A    0,95\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"13\",\"Dato\":\"MERMELADA HELIOS PACK8 FRES   A    0,95\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"14\",\"Dato\":\"SOBAOS PASIEGO IGP ALIP.330   A    1,99\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"15\",\"Dato\":\"----------------------------------------\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"16\",\"Dato\":\"TOTAL                              8,59?\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"17\",\"Dato\":\"----------------------------------------\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"18\",\"Dato\":\"Tarjeta......                      8,59\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"19\",\"Dato\":\"TOTAL ENTREGADO EUR.               8,59\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"20\",\"Dato\":\"CAMBIO EUR.                        0,00\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"21\",\"Dato\":\"----------------------------------------\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"22\",\"Dato\":\"Le atendio:\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"23\",\"Dato\":\"MAITE\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"24\",\"Dato\":\"GRACIAS POR SU CONFIANZA\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"25\",\"Dato\":\"TELEFONO ATENCIO AL CLIENTE: 900 113 213\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"26\",\"Dato\":\"VISITE NUESTRA WEB: WWW.AHORRAMAS.COM\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"27\",\"Dato\":\"N�mero de articulos: 7\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"28\",\"Dato\":\"========================================\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"29\",\"Dato\":\"N�mero factura: S130406/0216733\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"30\",\"Dato\":\"Factura simplificada\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"31\",\"Dato\":\"      Tipo       Base      Iva    Total\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"32\",\"Dato\":\"----------------------------------------\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"33\",\"Dato\":\"A     10.00%     5,99     0,60     6,59\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"34\",\"Dato\":\"B     21.00%     1,65     0,35     2,00\"},\n{\"Tienda\":\"001304\",\"Fecha\":\"07/10/2019\",\"Caja\":\"6\",\"Numero\":\"43\",\"IdTique\":\"S130406/0216733\",\"Linea\":\"35\",\"Dato\":\"----------------------------------------\"} ]\n}\n"}],"hasMore":false,"limit":0,"offset":0,"count":1,"links":[{"rel":"self","href":"https://ixcsyvrmtjm8ebr-benchatpdb.adb.eu-frankfurt-1.oraclecloudapps.com/ords/usuahm/consultaticket/ticket/"},{"rel":"describedby","href":"https://ixcsyvrmtjm8ebr-benchatpdb.adb.eu-frankfurt-1.oraclecloudapps.com/ords/usuahm/metadata-catalog/consultaticket/ticket/"}]}
+
+=> FUNCIONA !!!
+
+
