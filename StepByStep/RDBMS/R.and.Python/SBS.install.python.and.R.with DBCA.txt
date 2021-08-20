@@ -1,0 +1,71 @@
+--- Cortesia de Paco Alvarez !!!
+
+Al intentar hacerlo directamente sobre la PDB:
+
+ 
+
+[oracle@labsca213 ~]$ dbca -silent -configurePluggableDatabase -pdbName DBSCA_PDB1 -sourceDB DBSCA -configureOML4PY -enableOml4pyEmbeddedExecution true -oml4pyConfigTablespace SYSAUX -configureOracleR -oracleRConfigTablespace SYSAUX
+
+Enter password for the TDE wallet:
+
+ 
+
+[FATAL] [DBT-15311] Container database is not configured with OML4Py.
+
+ 
+
+Vamos sobre la CDB:
+
+ 
+
+[oracle@labsca213 ~]$ dbca -silent -configureDatabase -sourceDB DBSCA -configureOML4PY -enableOml4pyEmbeddedExecution true -oml4pyConfigTablespace SYSAUX -configureOracleR -oracleRConfigTablespace SYSAUX
+
+Enter password for the TDE wallet:
+
+ 
+
+Prepare for db operation
+
+22% complete
+
+Preparing to Configure Database
+
+24% complete
+
+44% complete
+
+Configure Oracle R
+
+67% complete
+
+Configure OML4PY
+
+89% complete
+
+Completing Database Configuration
+
+100% complete
+
+The database configuration has completed successfully.
+
+Look at the log file "/u01/app/oracle/cfgtoollogs/dbca/DBSCA_fra2kr/DBSCA_fra2kr0.log" for further details.
+
+ 
+
+ 
+
+Después si se intenta sobre una PDB (esto sería para PDBs que se creasen después):
+
+ 
+
+[oracle@labsca213 ~]$ dbca -silent -configurePluggableDatabase -pdbName DBSCA_PDB1 -sourceDB DBSCA -configureOML4PY -enableOml4pyEmbeddedExecution true -oml4pyConfigTablespace SYSAUX -configureOracleR -oracleRConfigTablespace SYSAUX
+
+Enter password for the TDE wallet:
+
+ 
+
+[FATAL] [DBT-14303] Oracle R is already configured in the selected pluggable database (DBSCA_PDB1).
+
+[FATAL] [DBT-15309]  Pluggable Database (DBSCA_PDB1) is already configured with OML4Py.
+
+ 
