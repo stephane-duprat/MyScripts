@@ -242,6 +242,7 @@ Add TCPS endpoint to the database listener
 
 Now that we are done with configuring our wallets and network files, we can move onto the next step, which is configuring the TCPS endpoint for the database listener. Since our listener is configured under grid, we will be using srvctl command to modify and restart it. Here are the steps:
 
+## As grid user !!!
 
 srvctl modify listener -p "TCP:1521/TCPS:1522"
 srvctl stop listener
@@ -345,8 +346,8 @@ Service "benchpb.sub03010825490.devopsvcn.oraclevcn.com" has 1 instance(s).
   Instance "SIDB", status READY, has 2 handler(s) for this service...
 The command completed successfully
 
-Check conection to DB:
-**********************
+Check conection to DB (Exacs/DBCS):
+***********************************
 
 Por el puerto 1521, todo debe seguir igual:
 *******************************************
@@ -521,7 +522,7 @@ DBMS_CLOUD.DROP_CREDENTIAL('ADMIN_DEF_CRED');
   
 DBMS_CLOUD.CREATE_CREDENTIAL(
 credential_name => 'ADMIN_DEF_CRED',
-username => 'stephane.duprat@oracle.com', 
+username => 'api_user', 
 password => 'sp:nkU:a1L3l)5.Mn[Wy'
 );
 END;
@@ -550,6 +551,7 @@ SQL_TCB_DIR                                                                     
 
 11 rows selected.
 
+--- From Sql Developer, as ADMIN user !!!
 
 CREATE DIRECTORY WALLETBENCHSI AS 'walletbenchsi';
 
@@ -587,6 +589,7 @@ SQL> select * from table(DBMS_CLOUD.LIST_FILES('WALLETBENCHSI'));
 
 no rows selected
 
+--- From Sql Developer, as ADMIN !!!
 
 BEGIN 
      DBMS_CLOUD.GET_OBJECT(
@@ -650,7 +653,7 @@ ERROR at line 1:
 ORA-12545: Connect failed because target host or object does not exist
 
 
-=> Parece que no resuelve "dbcn01-scan.sub03010825490.devopsvcn.oraclevcn.com" ....
+=> Parece que no resuelve "dbcn01-scan.sub03010825490.devopsvcn.oraclevcn.com" ....   THIS IS BECAUSE my DBCS has a PUBLIC IP !!!
 
 Pruebo por IP:
 **************

@@ -1,0 +1,239 @@
+a. Copy and unzip zdm21.2.zip to a compute in OCI
+
+Download ZDM from https://www.oracle.com/database/technologies/rac/zdm-downloads.html
+
+b. Install ZDM
+
+-- As opc !!!
+
+Unzip was made in /home/opc/ZDM/zdm21.2:
+
+[opc@zdmcompute zdm21.2]$ pwd
+/home/opc/ZDM/zdm21.2
+[opc@zdmcompute zdm21.2]$ ls -ltr
+total 758484
+drwxr-xr-x. 2 opc opc        23 Aug 25 00:37 rhp
+-rw-r--r--. 1 opc opc 776571053 Aug 25 00:37 zdm_home.zip
+-r-xr-xr-x. 1 opc opc     79728 Aug 25 00:37 zdminstall.sh
+-r-xr-xr-x. 1 opc opc      5885 Aug 25 00:37 README
+-r-xr-xr-x. 1 opc opc     10700 Aug 25 00:37 schema_operations.sh
+-rw-r--r--. 1 opc opc      8918 Aug 25 00:37 CredentialsDriver.class
+[opc@zdmcompute zdm21.2]$
+
+As per README, create two directories for ORACLE_HOME and ORACLE_BASE:
+
+[opc@zdmcompute zdm21.2]$ cd
+[opc@zdmcompute ~]$ mkdir app
+[opc@zdmcompute ~]$ cd app
+[opc@zdmcompute app]$ mkdir ZDM base
+
+Then run the install:
+
+===========================
+ Prerequisites
+===========================
+ - Ensure Host  resolves to right IP
+ - Ensure Packages 'glibc-devel' and 'expect' are installed
+ - Ensure OS version  OEL 7 or higher
+
+[opc@zdmcompute zdm21.2]$ hostname
+zdmcompute
+[opc@zdmcompute zdm21.2]$ nslookup zdmcompute
+Server:		169.254.169.254
+Address:	169.254.169.254#53
+
+Non-authoritative answer:
+Name:	zdmcompute.sub06221433571.skynet.oraclevcn.com
+Address: 10.0.1.72
+
+[opc@zdmcompute zdm21.2]$ cat /etc/os-release
+NAME="Oracle Linux Server"
+VERSION="7.9"
+ID="ol"
+ID_LIKE="fedora"
+VARIANT="Server"
+VARIANT_ID="server"
+VERSION_ID="7.9"
+PRETTY_NAME="Oracle Linux Server 7.9"
+ANSI_COLOR="0;31"
+CPE_NAME="cpe:/o:oracle:linux:7:9:server"
+HOME_URL="https://linux.oracle.com/"
+BUG_REPORT_URL="https://bugzilla.oracle.com/"
+
+ORACLE_BUGZILLA_PRODUCT="Oracle Linux 7"
+ORACLE_BUGZILLA_PRODUCT_VERSION=7.9
+ORACLE_SUPPORT_PRODUCT="Oracle Linux"
+ORACLE_SUPPORT_PRODUCT_VERSION=7.9
+
+[opc@zdmcompute zdm21.2]$ rpm -aq | grep glibc-devel
+glibc-devel-2.17-324.0.1.el7_9.x86_64
+
+[opc@zdmcompute zdm21.2]$ rpm -aq | grep expect
+[opc@zdmcompute zdm21.2]$
+
+=> Need to install expect package as root !!!
+
+sudo -i
+yum install expect
+
+[...]
+Installed:
+  expect.x86_64 0:5.45-14.el7_1
+
+Dependency Installed:
+  tcl.x86_64 1:8.5.13-8.el7
+
+Complete!
+
+=> OK
+
+
+[opc@zdmcompute zdm21.2]$ pwd
+/home/opc/ZDM/zdm21.2
+
+./zdminstall.sh setup oraclehome=/home/opc/app/ZDM oraclebase=/home/opc/app/base ziploc=/home/opc/ZDM/zdm21.2/zdm_home.zip -zdm
+
+[opc@zdmcompute zdm21.2]$ ./zdminstall.sh setup oraclehome=/home/opc/app/ZDM oraclebase=/home/opc/app/base ziploc=/home/opc/ZDM/zdm21.2/zdm_home.zip -zdm
+ZDM kit home: /home/opc/ZDM/zdm21.2
+/home/opc/ZDM/zdm21.2
+---------------------------------------
+Unzipping shiphome to ZDM home...
+---------------------------------------
+Unzipping shiphome...
+Shiphome unzipped successfully..
+---------------------------------------
+##### Performing GridHome Software Only Installation #####
+---------------------------------------
+Installation log location: /home/opc/app/base/crsdata/zdmcompute/rhp/logs/runInstaller_1632218879.out
+making dir /home/opc/app/base/crsdata/zdmcompute/rhp/conf
+---------------------------------------
+Generating Preference file
+---------------------------------------
+/home/opc/app/base/crsdata/zdmcompute/rhp/conf/rhp.pref
+Using port 8897 for MySQL
+---------------------------------------
+Generating Root Certificate
+---------------------------------------
+Cluster root certificate generated successfully.
+---------------------------------------
+Generating CA CERTS file
+---------------------------------------
+spawn /home/opc/app/ZDM/bin/crskeytoolctl -copycacerts -filestore /home/opc/app/base/crsdata/zdmcompute/security
+Enter JRE cacerts truststore password:
+JRE cacerts copied to file [/home/opc/app/base/crsdata/zdmcompute/security/cacerts].
+---------------------------------------
+Generating nogi.enabled file
+---------------------------------------
+nogi.enabled file generated sucessfully
+---------------------------------------
+Generating standalone_config.properties file
+---------------------------------------
+Setting base folder permissions
+---------------------------------------
+Copying service script to bin folder in Oracle Home
+---------------------------------------
+Storing to wallet
+---------------------------------------
+cacerts  crskeytoolctl.log  cwallet.sso  cwallet.sso.lck
+---------------------------------------
+Generating random password
+---------------------------------------
+-rw-------. 1 opc opc 4341 Sep 21 10:08 /home/opc/app/base/crsdata/zdmcompute/security/cwallet.sso
+-rw-------. 1 opc opc 4341 Sep 21 10:08 /home/opc/app/base/crsdata/zdmcompute/security/cwallet.sso
+RHP_PT.ZDM21_LINUX.X64_210812.1
+rhpctl working
+label_date is: 210812.1
+---------------------------------------
+Setting up MySQL...
+---------------------------------------
+spawn /home/opc/app/ZDM/mysql/server/bin/mysqladmin --defaults-file=/home/opc/app/base/crsdata/zdmcompute/rhp/conf/my.cnf -u root -p ping
+---------------------------------------
+Storing to wallet
+---------------------------------------
+cacerts  crskeytoolctl.log  cwallet.sso  cwallet.sso.lck
+---------------------------------------
+Generating random password
+---------------------------------------
+-rw-------. 1 opc opc 4453 Sep 21 10:08 /home/opc/app/base/crsdata/zdmcompute/security/cwallet.sso
+-rw-------. 1 opc opc 4453 Sep 21 10:08 /home/opc/app/base/crsdata/zdmcompute/security/cwallet.sso
+spawn /home/opc/app/ZDM/mysql/server/bin/mysql --socket=/home/opc/app/base/crsdata/zdmcompute/rhp/mysql/metadata/mysql.sock -u root
+---------------------------------------
+Creating MySQL DB and user...
+---------------------------------------
+spawn /home/opc/app/ZDM/mysql/server/bin/mysql --socket=/home/opc/app/base/crsdata/zdmcompute/rhp/mysql/metadata/mysql.sock -u root -p -e CREATE DATABASE IF NOT EXISTS GHSUSER21;
+spawn /home/opc/app/ZDM/mysql/server/bin/mysql --socket=/home/opc/app/base/crsdata/zdmcompute/rhp/mysql/metadata/mysql.sock -u root -p
+spawn /home/opc/app/ZDM/mysql/server/bin/mysql --socket=/home/opc/app/base/crsdata/zdmcompute/rhp/mysql/metadata/mysql.sock -u root -p -e GRANT ALTER, CREATE, CREATE TEMPORARY TABLES, CREATE VIEW, DELETE, DROP, INDEX, INSERT, LOCK TABLES, REFERENCES, SELECT, SHOW VIEW, UPDATE ON GHSUSER21.* TO 'GHSUSER21'@'localhost';
+current node is active node
+spawn /home/opc/app/ZDM/mysql/server/bin/mysqladmin --defaults-file=/home/opc/app/base/crsdata/zdmcompute/rhp/conf/my.cnf -u root -p shutdown
+---------------------------------------
+Adding Certs to ZDM
+---------------------------------------
+ZDM service setup finished successfully...
+
+[opc@zdmcompute zdm21.2]$
+
+--- Check install !!!
+
+export ORACLE_HOME=/home/opc/app/ZDM
+export ORACLE_BASE=/home/opc/app/base
+
+$ORACLE_HOME/bin/zdmservice start
+
+[...]
+Return code is 0
+Server started successfully.
+
+[opc@zdmcompute zdm21.2]$
+[opc@zdmcompute zdm21.2]$ $ORACLE_HOME/bin/zdmservice status
+
+---------------------------------------
+	Service Status
+---------------------------------------
+
+ Running: 	true
+ Tranferport:
+ Conn String: 	jdbc:mysql://localhost:8897/
+ RMI port: 	8895
+ HTTP port: 	8896
+ Wallet path: 	/home/opc/app/base/crsdata/zdmcompute/security
+
+[opc@zdmcompute zdm21.2]$ $ORACLE_HOME/bin/zdmservice stop
+spawn /home/opc/app/ZDM/mysql/server/bin/mysqladmin --defaults-file=/home/opc/app/base/crsdata/zdmcompute/rhp/conf/my.cnf -u root -p shutdown
+ WARNING: oracle.jwc.jmx does not exist in the configuration file. It will be TRUE by default.
+[jwcctl debug] Environment ready to start JWC
+[jwcctl debug] Return code of initialization: [0]
+
+[jwcctl debug] ... BEGIN_DEBUG [Action= stop] ...
+Stop JWC
+[jwcctl debug] Get JWC PIDs
+[jwcctl debug] Done Getting JWC PIDs
+[jwcctl debug] ... JWC Container (pid=5358) ...
+[jwcctl debug]     Stop command:-Dcatalina.base=/home/opc/app/base/crsdata/zdmcompute/rhp -Doracle.tls.enabled=false -Doracle.wlm.dbwlmlogger.logging.level=FINEST -Doracle.jwc.client.logger.file.name=/home/opc/app/base/crsdata/zdmcompute/rhp/logs/jwc_shutter_stdout_err_%g.log -Doracle.jwc.client.logger.file.number=10 -Doracle.jwc.client.logger.file.size=1048576 -Doracle.jwc.wallet.path=/home/opc/app/base/crsdata/zdmcompute/security -Doracle.jmx.login.credstore=WALLET -classpath /home/opc/app/ZDM/jlib/jwc-logging.jar:/home/opc/app/ZDM/jlib/jwc-client.jar:/home/opc/app/ZDM/jlib/jwc-security.jar:/home/opc/app/ZDM/jdk/lib/tools.jar:/home/opc/app/ZDM/tomcat/lib/tomcat-juli.jar oracle.cluster.jwc.tomcat.client.ShutdownContainer 5358
+[jwcctl debug] Get JWC shutter PIDs
+[jwcctl debug] Done getting JWC shutter PIDs
+[jwcctl debug] ... JWC shutter command (pid=5853) ...
+[jwcctl debug] ... Initial Check - JWC Shutter JVM waiting (pid=5853) ...
+[jwcctl debug] ... Sleep for 1 seconds ...
+[jwcctl debug] ... Iteration 0 Check for JWC Shutter ...
+[jwcctl debug] Get JWC shutter PIDs
+[jwcctl debug] Done getting JWC shutter PIDs
+[jwcctl debug] ... JWC shutter command (pid=5853) ...
+[jwcctl debug] ... Iteration 0 JWC Shutter  waiting (pid=5853) ...
+[jwcctl debug] ... Sleep for 1 seconds ...
+[jwcctl debug] ... Iteration 1 Check for JWC Shutter ...
+[jwcctl debug] Get JWC shutter PIDs
+[jwcctl debug] Done getting JWC shutter PIDs
+[jwcctl debug] ... JWC shutter command not found ...
+[jwcctl debug] ... Iteration 1 Check for JWC Container ...
+[jwcctl debug] Get JWC PIDs
+[jwcctl debug] Done Getting JWC PIDs
+[jwcctl debug] ... JWC containers not found ...
+[jwcctl debug] ... JWC Container is stopped ...
+[jwcctl debug] ... STOP - Return code = 0 ...
+[jwcctl debug]  ... END_DEBUG [Action=stop] ...
+[jwcctl debug] Return code of AGENT: [0]
+
+Return code is 0
+zdmservice stopped successfully.
+
+--

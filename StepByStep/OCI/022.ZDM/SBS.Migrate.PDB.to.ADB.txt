@@ -1,0 +1,349 @@
+--- First we'll create a CDB with WE8ISO8859P1 characterset !!!
+--- DB created on rdbms21coniaas !!!
+
+dbca -silent -createDatabase \
+ -templateName General_Purpose.dbc \
+ -gdbname cdb3 -sid cdb3 -responseFile NO_VALUE \
+ -characterSet WE8ISO8859P1 \
+ -sysPassword AaZZ0r_cle#1 \
+ -systemPassword AaZZ0r_cle#1 \
+ -createAsContainerDatabase true \
+ -numberOfPDBs 1 \
+ -pdbName pdbISO \
+ -pdbAdminPassword AaZZ0r_cle#1 \
+ -databaseType MULTIPURPOSE \
+ -memoryMgmtType auto_sga \
+ -totalMemory 1024 \
+ -storageType FS \
+ -datafileDestination "/u02/oracle/datafiles/" \
+ -redoLogFileSize 50 \
+ -emConfiguration NONE \
+ -ignorePreReqs
+
+
+source CDB3.env
+ sqlplus / as sysdba
+
+SQL> select value from nls_database_parameters where parameter = 'NLS_CHARACTERSET';
+
+VALUE
+----------------------------------------------------------------
+WE8ISO8859P1
+
+SQL> show pdbs
+
+    CON_ID CON_NAME			  OPEN MODE  RESTRICTED
+---------- ------------------------------ ---------- ----------
+	 2 PDB$SEED			  READ ONLY  NO
+	 3 PDBISO			  READ WRITE NO
+SQL>
+
+--- Setup a schema in PDBISO !!!
+
+[oracle@rdbms21coniaas ~]$ sqlplus sys/AaZZ0r_cle#1@rdbms21coniaas:1521/pdbiso as sysdba
+
+SQL*Plus: Release 21.0.0.0.0 - Production on Tue Sep 21 14:57:51 2021
+Version 21.3.0.0.0
+
+Copyright (c) 1982, 2021, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 21c Enterprise Edition Release 21.0.0.0.0 - Production
+Version 21.3.0.0.0
+
+SQL> create user TESTADB identified by "AaZZ0r_cle#1" default tablespace USERS temporary tablespace TEMP;
+
+User created.
+
+SQL> grant connect, resource to TESTADB;
+
+Grant succeeded.
+
+SQL> alter user TESTADB quota unlimited on USERS;
+
+User altered.
+
+SQL> exit
+
+[oracle@rdbms21coniaas ~]$ sqlplus TESTADB/AaZZ0r_cle#1@rdbms21coniaas:1521/pdbiso
+
+SQL*Plus: Release 21.0.0.0.0 - Production on Tue Sep 21 14:59:12 2021
+Version 21.3.0.0.0
+
+Copyright (c) 1982, 2021, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 21c Enterprise Edition Release 21.0.0.0.0 - Production
+Version 21.3.0.0.0
+
+SQL> create table t (c1 varchar2(6));
+
+Table created.
+
+SQL> insert into t values ('ESPAÑA');
+insert into t values ('ESPAÑA')
+                      *
+ERROR at line 1:
+ORA-12899: value too large for column "TESTADB"."T"."C1" (actual: 7, maximum:
+6)
+
+=> This is because "Ñ" is represented by two bytes in WE8ISO8859P1 !!!
+
+SQL> drop table t purge;
+
+Table dropped.
+
+SQL> create table t (c1 varchar2(7));
+
+Table created.
+
+SQL> insert into t values ('ESPAÑA');
+
+1 row created.
+
+SQL> commit;
+
+Commit complete.
+
+SQL>
+
+=> This works now, but the same data in a AL32UTF8 would fail, as in AL32UTF8 "Ñ" representation has 4 bytes !!!
+
+SQL> insert into t values ('ESPAÑA');
+insert into t values ('ESPAÑA')
+                      *
+ERROR at line 1:
+ORA-12899: value too large for column "SYS"."T"."C1" (actual: 11, maximum: 7)
+
+
+--- Now we will migrate the TESTADB schema in PDBISO to ADB !!!
+
+###" logical to autonomous
+cat<<EOF>/home/opc/logical.rsp
+MIGRATION_METHOD=OFFLINE_LOGICAL
+DATA_TRANSFER_MEDIUM=OSS
+
+TARGETDATABASE_OCID=ocid1.autonomousdatabase.oc1.eu-frankfurt-1.abtheljtubn3d2xdxzsnb5pxygye35s2goqxdxmljhj7tk6hm4rtgox354xq
+TARGETDATABASE_ADMINUSERNAME=ADMIN
+SOURCEDATABASE_ADMINUSERNAME=system
+SOURCEDATABASE_CONNECTIONDETAILS_HOST=10.0.1.135
+SOURCEDATABASE_CONNECTIONDETAILS_PORT=1521
+SOURCEDATABASE_CONNECTIONDETAILS_SERVICENAME=pdbiso
+
+OCIAUTHENTICATIONDETAILS_USERPRINCIPAL_TENANTID=ocid1.tenancy.oc1..aaaaaaaa4weq6bgxr4rzg65lzckg2ng2xgglsj2bc5j4n2zngkibwp6i6jza
+OCIAUTHENTICATIONDETAILS_USERPRINCIPAL_USERID=ocid1.user.oc1..aaaaaaaanddsvjghxzkr6ly3xcud2mkjfx2xj6e4x7e4tjy45xpqce254gva
+OCIAUTHENTICATIONDETAILS_USERPRINCIPAL_FINGERPRINT=12:10:d0:72:90:be:7b:5e:f3:61:ac:d7:3d:8e:0e:44
+OCIAUTHENTICATIONDETAILS_USERPRINCIPAL_PRIVATEKEYFILE=/home/opc/ZDM/zdm21.2/APIKEYS/oci_api_key.pem
+OCIAUTHENTICATIONDETAILS_REGIONID=eu-frankfurt-1
+
+DATAPUMPSETTINGS_JOBMODE=SCHEMA
+DATAPUMPSETTINGS_CREATEAUTHTOKEN=TRUE
+
+DATAPUMPSETTINGS_DATAPUMPPARAMETERS_EXPORTPARALLELISMDEGREE=1
+DATAPUMPSETTINGS_DATAPUMPPARAMETERS_IMPORTPARALLELISMDEGREE=1
+
+DATAPUMPSETTINGS_DATABUCKET_NAMESPACENAME=oractdemeabdmautodb
+DATAPUMPSETTINGS_DATABUCKET_BUCKETNAME=TESTZDM
+
+DATAPUMPSETTINGS_METADATAREMAPS-1=type:REMAP_TABLESPACE,oldValue:USERS,newValue:DATA
+DATAPUMPSETTINGS_DATAPUMPPARAMETERS_TABLEEXISTSACTION=REPLACE
+
+DATAPUMPSETTINGS_EXPORTDIRECTORYOBJECT_NAME=zdm
+## This is the path on the onprem database server: must exist !!!
+DATAPUMPSETTINGS_EXPORTDIRECTORYOBJECT_PATH=/u02/oracle/DATAPUMP/ZDM
+DATAPUMPSETTINGS_FIXINVALIDOBJECTS=TRUE
+
+
+DUMPTRANSFERDETAILS_SOURCE_USEOCICLI=TRUE
+INCLUDEOBJECTS-1=owner:TESTADB
+#INCLUDEOBJECTS-2=owner:HR
+
+EOF
+
+
+### VM to autonomous LOGICAL DATAPUMP
+export ZDM_HOME=/home/opc/app/ZDM
+cat<<EOF> /home/opc/mig2autonomous
+$ZDM_HOME/bin/zdmcli migrate database \
+-rsp /home/opc/logical.rsp \
+-sourcenode 10.0.1.135 \
+-sourcesid  ZDMSRC \
+-srcauth zdmauth \
+-srcarg1 user:opc \
+-srcarg2 identity_file:/home/opc/.ssh/privateKey  \
+-srcarg3 sudo_location:/usr/bin/sudo \
+-eval
+EOF
+
+[opc@zdmcompute ~]$ cat mig2autonomous
+/home/opc/app/ZDM/bin/zdmcli migrate database -rsp /home/opc/logical.rsp -sourcenode 10.0.1.135 -sourcesid  ZDMSRC -srcauth zdmauth -srcarg1 user:opc -srcarg2 identity_file:/home/opc/.ssh/privateKey  -srcarg3 sudo_location:/usr/bin/sudo -eval
+[opc@zdmcompute ~]$
+
+chmod u+x mig2autonomous
+
+autoexpect ./mig2autonomous
+
+[opc@zdmcompute ~]$ autoexpect ./mig2autonomous
+autoexpect started, file is script.exp
+zdmcompute.sub06221433571.skynet.oraclevcn.com: Audit ID: 2
+Enter source database administrative user "system" password:
+Enter target database administrative user "ADMIN" password:
+Operation "zdmcli migrate database" scheduled with the job ID "1".
+autoexpect done, file is script.exp
+[opc@zdmcompute ~]$
+
+[opc@zdmcompute ~]$ ls -ltr
+total 12
+drwxrwxr-x. 3 opc opc   21 Sep 21 09:54 ZDM
+drwxrwxr-x. 4 opc opc   29 Sep 21 10:01 app
+-rw-rw-r--. 1 opc opc 1680 Sep 22 10:52 logical.rsp
+-rwxrw-r--. 1 opc opc  243 Sep 22 10:56 mig2autonomous
+-rwxrwxr-x. 1 opc opc 2049 Sep 22 10:58 script.exp     <===== This file has been generated !!!
+
+-- We use script.exp to generate the following one !!!
+--- Before that we need to create an auth token for the OCI user !!!
+
+cat <<EOF> runmig2autonomous.exp
+#!/bin/expect -f
+
+
+set timeout -1
+spawn ./mig2autonomous
+match_max 100000
+expect -exact "\r
+Enter source database administrative user \"system\" password:"
+send -- "AaZZ0r_cle#1\r"
+expect -exact "\r
+Enter target database administrative user \"ADMIN\" password:"
+send -- "AaZZ0r_cle#1\r"
+expect -exact "\r
+Enter Authentication Token for OCI user \"ocid1.user.oc1..aaaaaaaanddsvjghxzkr6ly3xcud2mkjfx2xj6e4x7e4tjy45xpqce254gva\":"
+send -- "9dVk1MR7s43cSDN#(dZP\r"
+expect -exact "\r
+Enter Data Pump encryption password:"
+send -- "oracle\r"
+expect eof
+EOF
+
+#### run the EVALUATION STEP BELOW
+expect runmig2autonomous.exp
+
+
+#### RUN THE MIGRATION ######
+
+### VM to autonomous LOGICAL DATAPUMP
+export ZDM_HOME=/home/zdmuser/app/zdmhome
+cat<<EOF> mig2autonomous
+$ZDM_HOME/bin/zdmcli migrate database \
+-rsp /home/zdmuser/logical.rsp \
+-sourcenode 10.0.0.207 \
+-sourcesid  ZDMSRC \
+-srcauth zdmauth \
+-srcarg1 user:opc \
+-srcarg2 identity_file:/home/zdmuser/.ssh/zdm_service_host.ppk  \
+-srcarg3 sudo_location:/usr/bin/sudo
+EOF
+
+cat mig2autonomous
+chmod u+x mig2autonomous
+
+##autoexpect ./mig2autonomous
+
+
+cat <<EOF> runmig2autonomous.exp
+#!/bin/expect -f
+
+
+set timeout -1
+spawn ./mig2autonomous
+match_max 100000
+expect -exact "\r
+Enter source database administrative user \"system\" password:"
+send -- "oracle\r"
+expect -exact "\r
+Enter target database administrative user \"ADMIN\" password:"
+send -- "WElcome1412##\r"
+expect -exact "\r
+Enter Authentication Token for OCI user \"ocid1.user.oc1..aaaaaaaapk5hg7bfqjp4clgrp5c7oezkexouvgf6eromnhrizk4tmhei5mgq\":"
+send -- "E.lSM3UZ0{+Uxy.9ZDh;\r"
+expect -exact "\r
+Enter Data Pump encryption password:"
+send -- "oracle\r"
+expect eof
+EOF
+
+#### run the EVALUATION STEP BELOW
+expect runmig2autonomous.exp
+
+export ZDM_HOME=/home/zdmuser/app/zdmhome
+$ZDM_HOME/bin/zdmcli query job  -jobid
+
+
+#### failures
+BEGIN
+DBMS_CLOUD.DROP_CREDENTIAL ( credential_name=> 'DEF_CRED_NAME');
+END;
+/  
+   
+
+BEGIN
+  DBMS_CLOUD.CREATE_CREDENTIAL(
+    credential_name => 'DEF_CRED_NAME',
+    username => 'eugene.simos@oracle.com',
+    password => 'SrI_tHiaUjkpZjX0S}I]'
+  );
+END;
+/
+
+
+BEGIN
+  DBMS_CLOUD.UPDATE_CREDENTIAL(
+     credential_name => 'DEF_CRED_NAME',
+     attribute => 'PASSWORD',
+     value => 'SrI_tHiaUjkpZjX0S}I]'); 
+END;
+/
+
+### from the source server
+
+export TNS_ADMIN=/home/oracle/autonomous
+sqlplus admin/'WElcome1412##'@zdmtarget_high<<EOF
+
+drop user hr cascasde;
+drop user soe cascade;
+EOF
+
+SELECT OBJECT_NAME FROM table(dbms_cloud.list_files('DATA_PUMP_DIR'))
+
+
+
+
+
+export TNS_ADMIN=/home/oracle/autonomous
+export TNS_ADMIN=/home/oracle/autonomous
+sqlplus admin/'WElcome1412##'@zdmtarget_high<<EOF
+EOF
+
+impdp  admin/'WElcome1412##'@zdmtarget_high \
+     directory=data_pump_dir \
+     credential=def_cred_name \
+     dumpfile=https://swiftobjectstorage.eu-frankfurt-1.oraclecloud.com/v1/oractdemeabdmautodb/ZDM/ZDM_95_DP_EXPORT_6934_dmp_01.dmp \
+     parallel=16 \
+     encryption_pwd_prompt=yes \
+     transform=segment_attributes:n \
+     transform=dwcs_cvt_iots:y transform=constraint_use_default_index:y \
+     exclude=cluster,indextype,db_link  REMAP_TABLESPACE=users:data
+
+
+
+
+BEGIN
+  DBMS_CLOUD.PUT_OBJECT(
+    credential_name => 'DEF_CRED_NAME',
+    object_uri => 'https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/oractdemeabdmautodb/b/ZDM',
+    directory_name  => 'DATA_PUMP_DIR',
+    file_name => 'import.log');
+END;
+/
