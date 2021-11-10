@@ -219,13 +219,14 @@ expect -exact "\r
 Enter target database administrative user \"ADMIN\" password:"
 send -- "AaZZ0r_cle#1\r"
 expect -exact "\r
-Enter Authentication Token for OCI user \"ocid1.user.oc1..aaaaaaaanddsvjghxzkr6ly3xcud2mkjfx2xj6e4x7e4tjy45xpqce254gva\":"
+Enter Authentication Token for OCI user ID=ocid1.user.oc1..aaaaaaaanddsvjghxzkr6ly3xcud2mkjfx2xj6e4x7e4tjy45xpqce254gva :"
 send -- "9dVk1MR7s43cSDN#(dZP\r"
 expect -exact "\r
 Enter Data Pump encryption password:"
 send -- "oracle\r"
 expect eof
 EOF
+
 
 #### run the EVALUATION STEP BELOW
 expect runmig2autonomous.exp
@@ -234,7 +235,7 @@ expect runmig2autonomous.exp
 #### RUN THE MIGRATION ######
 
 ### VM to autonomous LOGICAL DATAPUMP
-export ZDM_HOME=/home/zdmuser/app/zdmhome
+export ZDM_HOME=/home/opc/app/ZDM
 cat<<EOF> mig2autonomous
 $ZDM_HOME/bin/zdmcli migrate database \
 -rsp /home/zdmuser/logical.rsp \
