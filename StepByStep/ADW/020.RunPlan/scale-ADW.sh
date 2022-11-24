@@ -9,7 +9,7 @@ planlogfile=$3
 ### Gets current ocpu count !!!
 /home/opc/bin/oci db autonomous-database get --autonomous-database-id ${ocid} --defaults-file /home/opc/.oci/mydefaults.txt 1>${ficlog} 2>&1
 
-currentocpu=$(grep "cpu-core-count" ${ficlog} | awk '{ print $NF }' | sed '1,$ s/"//g' | sed '1,$ s/,//')
+currentocpu=$(grep "cpu-core-count" ${ficlog} | awk '{ print $NF }' | sed '1,$ s/"//g' | sed '1,$ s/,//' | head -1)
 echo "Current ocpu="${currentocpu}
 
 if ! [ ${currentocpu} -eq ${newocpu} ]
